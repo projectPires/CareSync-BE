@@ -86,7 +86,9 @@ const http = () => request(app?.getHttpServer());
 describe('Auth (e2e, real Postgres + Redis)', () => {
   it('login → access + refresh + user payload, no hashes serialized', async () => {
     if (!dbUp) return;
-    const res = await http().post('/api/auth/login').send({ email: adminEmail, password: PASSWORD });
+    const res = await http()
+      .post('/api/auth/login')
+      .send({ email: adminEmail, password: PASSWORD });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeDefined();
     expect(res.body.refresh_token).toMatch(/^[0-9a-f-]{36}\./);
