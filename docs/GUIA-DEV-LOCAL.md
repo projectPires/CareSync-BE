@@ -62,7 +62,7 @@ pnpm prisma db seed           # dados demo: Lar Bem-Estar + 4 users + 5 resident
 pnpm start:dev                # arranca a API em http://localhost:3000
 ```
 
-Confirmação: abre http://localhost:3000/v1/health → deve responder `{"status":"ok","checks":{"database":"up","redis":"up"}}`. Documentação da API: http://localhost:3000/docs.
+Confirmação: abre http://localhost:3000/api/health → deve responder `{"status":"ok","checks":{"database":"up","redis":"up"}}`. Documentação da API: http://localhost:3000/docs.
 
 ---
 
@@ -174,7 +174,7 @@ Regras do projeto:
 **"docker: command not found" ou "Cannot connect to the Docker daemon"**
 → O Docker Desktop não está aberto. Abre-o e espera pelo "Engine running" (baleia estável).
 
-**`/v1/health` diz `"database":"down"`**
+**`/api/health` diz `"database":"down"`**
 → Containers desligados: `docker compose up -d` e espera ~10 segundos.
 
 **Erro "role caresync_app does not exist"**

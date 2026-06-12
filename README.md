@@ -18,7 +18,7 @@ A app móvel é **exclusiva dos workers**. Toda a gestão do Lar acontece no pai
 
 | | |
 |---|---|
-| API | REST + OpenAPI 3, `/v1` — os clientes geram clientes tipados a partir do spec |
+| API | REST + OpenAPI 3, `/api` — os clientes geram clientes tipados a partir do spec |
 | Runtime | Node 22 LTS · NestJS · TypeScript strict |
 | Base de dados | PostgreSQL 16 com **Row-Level Security** — multi-tenant por `lar_id` em todas as tabelas |
 | ORM | Prisma (extensão tenant-aware: cada operação em transação + `set_config('app.current_lar_id', …, true)`) |
@@ -33,7 +33,7 @@ Invariantes centrais do código:
 
 - **Dados clínicos append-only** — retificações criam novo registo com motivo; o audit log não tem UPDATE/DELETE ao nível da base de dados.
 - **Dupla administração de medicação é estruturalmente impossível** — `UNIQUE (medication_id, scheduled_at) WHERE status = 'taken'`.
-- **Sync offline-first** — a app móvel guarda mutations ≥ 2 h offline; `/v1/sync/batch` ingere-as de forma idempotente via chaves `client_id` geradas no dispositivo.
+- **Sync offline-first** — a app móvel guarda mutations ≥ 2 h offline; `/api/sync/batch` ingere-as de forma idempotente via chaves `client_id` geradas no dispositivo.
 - **RGPD Art. 9** — dados de saúde: residência UE, encriptação, consentimento, retenção de 5 anos, zero PII em logs ou notificações push.
 
 ## Começar

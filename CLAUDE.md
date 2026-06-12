@@ -27,7 +27,7 @@ Decided 2026-06-12: the mobile app is **workers-only**; the Lar admin works in t
 
 | Decision | Choice | Why |
 |---|---|---|
-| API style | REST + OpenAPI 3, `/v1` prefix | NestJS emits the spec; mobile + web clients codegen typed clients (no monorepo) |
+| API style | REST + OpenAPI 3, `/api` prefix (sem versões — evolução aditiva apenas) | NestJS emits the spec; mobile + web clients codegen typed clients (no monorepo) |
 | Runtime | Node 22 LTS + NestJS + TypeScript strict | TS end-to-end with mobile |
 | ORM | Prisma | RLS via client extension wrapping every op in `$transaction` + `set_config` |
 | Database | PostgreSQL 16 | RLS multi-tenant by `lar_id`, jsonb, `pg_trgm` search |
@@ -89,7 +89,7 @@ CareSync-BE/
 │   ├── migrations/              # RLS policies live in migrations (raw SQL)
 │   └── seed.ts                  # 1 demo Lar + admin + 3 workers + 5 residents
 ├── src/
-│   ├── main.ts                  # bootstrap: /v1 versioning, swagger, pipes, filters
+│   ├── main.ts                  # bootstrap: prefixo /api, swagger, pipes, filters
 │   ├── app.module.ts
 │   ├── config/                  # @nestjs/config + zod env schema — ONLY place reading process.env
 │   ├── common/                  # guards (PermissionsGuard), interceptors (audit), filters, decorators
@@ -100,7 +100,7 @@ CareSync-BE/
 │       ├── clinical/            # emar/ vitals/ logs/ wounds/ elimination/ activities/
 │       ├── shifts/  tasks/
 │       ├── alerts/              # rules engine + gateway (Socket.IO)
-│       ├── sync/                # /v1/sync/batch — offline mutation queue ingestion
+│       ├── sync/                # /api/sync/batch — offline mutation queue ingestion
 │       ├── files/               # S3 presign
 │       ├── billing/             # subscription read-only + Stripe webhooks + grace state machine
 │       ├── pdf/                 # Puppeteer server-side reports (NOT the INEM PDF)

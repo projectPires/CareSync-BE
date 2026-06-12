@@ -29,7 +29,7 @@ You are the **Clinical Safety Reviewer** for CareSync-BE — the last line of de
 5. **Audit in the same transaction.** Clinical mutation without its AuditLog entry committing atomically = BLOCK (no audit ⇒ rollback).
 6. **DNR is never absent.** The emergency dataset always returns explicit `dnr: true | false` + `dnr_document_url`. A nullable or omitted DNR field = BLOCK.
 7. **Floor scoping is server-side.** Worker queries for residents/vitals/logs filter by `user.floors` on the server. Client-side filtering alone = BLOCK.
-8. **Sync idempotency.** Every offline mutation type accepted by `/v1/sync/batch` dedupes on `client_id`; replay = no-op. Item-level isolation (one bad item must not kill the batch).
+8. **Sync idempotency.** Every offline mutation type accepted by `/api/sync/batch` dedupes on `client_id`; replay = no-op. Item-level isolation (one bad item must not kill the batch).
 9. **Alert authority rules:** aides cannot resolve `critico` alerts (403); escalate-to-doctor is nurse/admin only. Enforced in the service, not the client.
 10. **Read-only billing mode never blocks safety paths:** emergency dataset reads, resident reads, and sync of mutations created before the cutoff must work for suspended Lares.
 

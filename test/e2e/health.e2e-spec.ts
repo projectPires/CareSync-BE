@@ -1,4 +1,4 @@
-import { INestApplication, VersioningType } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
@@ -8,13 +8,13 @@ import { AppModule } from '../../src/app.module';
  * (503/degraded) — what it proves is wiring: /v1 versioning, module graph,
  * health checks executing against real config.
  */
-describe('GET /v1/health (e2e)', () => {
+describe('GET /api/health (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
-    app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+    app.setGlobalPrefix('api');
     await app.init();
   });
 
@@ -23,7 +23,7 @@ describe('GET /v1/health (e2e)', () => {
   });
 
   it('responds on the versioned route with a well-formed report', async () => {
-    const res = await request(app.getHttpServer()).get('/v1/health');
+    const res = await request(app.getHttpServer()).get('/api/health');
     expect([200, 503]).toContain(res.status);
     expect(['ok', 'degraded']).toContain(res.body.status);
     expect(['up', 'down']).toContain(res.body.checks.database);

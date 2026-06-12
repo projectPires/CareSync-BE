@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/v1/health": {
+    "/api/health": {
       "get": {
-        "operationId": "HealthController_check_v1",
+        "operationId": "HealthController_check",
         "parameters": [],
         "responses": {
           "200": {
@@ -19,9 +19,9 @@
         ]
       }
     },
-    "/v1/auth/login": {
+    "/api/auth/login": {
       "post": {
-        "operationId": "AuthController_login_v1",
+        "operationId": "AuthController_login",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -60,9 +60,9 @@
         ]
       }
     },
-    "/v1/auth/pin": {
+    "/api/auth/pin": {
       "post": {
-        "operationId": "AuthController_pinLogin_v1",
+        "operationId": "AuthController_pinLogin",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -98,7 +98,7 @@
         ]
       },
       "put": {
-        "operationId": "AuthController_setPin_v1",
+        "operationId": "AuthController_setPin",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -126,9 +126,9 @@
         ]
       }
     },
-    "/v1/auth/refresh": {
+    "/api/auth/refresh": {
       "post": {
-        "operationId": "AuthController_refresh_v1",
+        "operationId": "AuthController_refresh",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -161,9 +161,9 @@
         ]
       }
     },
-    "/v1/auth/logout": {
+    "/api/auth/logout": {
       "post": {
-        "operationId": "AuthController_logout_v1",
+        "operationId": "AuthController_logout",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -186,9 +186,9 @@
         ]
       }
     },
-    "/v1/auth/invite": {
+    "/api/auth/invite": {
       "post": {
-        "operationId": "AuthController_invite_v1",
+        "operationId": "AuthController_invite",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -225,9 +225,9 @@
         ]
       }
     },
-    "/v1/auth/invite/accept": {
+    "/api/auth/invite/accept": {
       "post": {
-        "operationId": "AuthController_acceptInvite_v1",
+        "operationId": "AuthController_acceptInvite",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -256,9 +256,9 @@
         ]
       }
     },
-    "/v1/auth/invite/resend": {
+    "/api/auth/invite/resend": {
       "post": {
-        "operationId": "AuthController_resendInvite_v1",
+        "operationId": "AuthController_resendInvite",
         "parameters": [],
         "requestBody": {
           "required": true,

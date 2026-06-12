@@ -1,4 +1,4 @@
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -8,7 +8,9 @@ import { buildOpenApiDocument, setupSwagger } from './openapi';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
-  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+  // API única sem versões (decidido 2026-06-12): o contrato evolui de forma
+  // ADITIVA apenas — nunca remover/renomear campos nem mudar semântica.
+  app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
