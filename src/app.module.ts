@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { PermissionsGuard } from './common/guards/permissions.guard';
 import { validateEnv } from './config/env';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -9,7 +10,10 @@ import { BillingModule } from './modules/billing/billing.module';
 import { ClinicalModule } from './modules/clinical/clinical.module';
 import { HealthModule } from './modules/health/health.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+import { LaresModule } from './modules/lares/lares.module';
 import { PdfModule } from './modules/pdf/pdf.module';
+import { ResidentsModule } from './modules/residents/residents.module';
+import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 
@@ -23,12 +27,19 @@ import { RedisModule } from './redis/redis.module';
     RedisModule,
     HealthModule,
     AuthModule,
+    LaresModule,
+    UsersModule,
+    ResidentsModule,
     ClinicalModule,
     AlertsModule,
     BillingModule,
     PdfModule,
     JobsModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
+  providers: [
+    // Ordem importa: autenticação primeiro, autorização (matriz §8) depois.
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
+  ],
 })
 export class AppModule {}
