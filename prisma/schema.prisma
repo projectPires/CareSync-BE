@@ -1,0 +1,511 @@
+// CareSync physical schema — derives from Notion §7 Data Model (v1.1).
+// Schema changes MUST be reflected back into Notion §7 (prisma-rls-guardian rule).
+//
+// Multi-tenancy: every tenant table carries lar_id (denormalized — RLS policies
+// are direct, never join-based). RLS + FORCE is enabled per table in the
+// migration SQL; app access goes through the tenant extension (src/prisma/).
+//
+// Append-only tables (medication_administration, vital_reading, log_entry,
+// audit_log): rectifications insert a new row with supersedes_id + reason.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Enums ────────────────────────────────────────────────────────────────────
+
+enum LarStatus {
+  trial
+  active
+  suspended
+  cancelled
+}
+
+enum BillingCycle {
+  monthly
+  annual
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  cancelled
+}
+
+enum UserRole {
+  admin
+  nurse
+  aide
+  doctor
+}
+
+enum UserStatus {
+  invited
+  active
+  disabled
+}
+
+enum Gender {
+  f
+  m
+  nb
+  not_disclosed
+}
+
+enum BloodType {
+  a_pos
+  a_neg
+  b_pos
+  b_neg
+  ab_pos
+  ab_neg
+  o_pos
+  o_neg
+  unknown
+}
+
+enum ResidentStatus {
+  estavel
+  atencao
+  critico
+  recuperacao
+}
+
+enum ArchiveReason {
+  death
+  discharge
+  transfer
+  other
+}
+
+enum ShiftType {
+  morning
+  afternoon
+  night
+  custom
+}
+
+enum TaskCategory {
+  medicacao
+  higiene
+  alimentacao
+  outro
+}
+
+enum MedicationForm {
+  comp
+  cap
+  drop
+  patch
+  inj
+  suspension
+}
+
+enum MedicationRoute {
+  oral
+  sublingual
+  im
+  sc
+  iv
+  topical
+}
+
+/// Lifecycle (Notion §7): pending → taken | refused | delayed; delayed → taken | missed.
+enum AdministrationStatus {
+  pending
+  taken
+  refused
+  delayed
+  missed
+}
+
+enum VitalMetric {
+  bp
+  hr
+  spo2
+  temp
+  glucose
+  pain
+}
+
+enum LogCategory {
+  medical
+  nutrition
+  hygiene
+  social
+}
+
+enum AlertSeverity {
+  critico
+  aviso
+  info
+}
+
+enum AlertSource {
+  auto
+  manual
+  sensor
+}
+
+enum WoundStatus {
+  open
+  healing
+  closed
+}
+
+// ── Tenancy root ─────────────────────────────────────────────────────────────
+
+model Lar {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  legalName String    @map("legal_name")
+  nif       String
+  address   Json
+  floors    Int
+  capacity  Int
+  config    Json      @default("{}")
+  status    LarStatus @default(trial)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  subscriptions Subscription[]
+  users         User[]
+  residents     Resident[]
+  shifts        Shift[]
+
+  @@map("lar")
+}
+
+model Subscription {
+  id           String             @id @default(uuid()) @db.Uuid
+  larId        String             @map("lar_id") @db.Uuid
+  seats        Int
+  pricePerSeat Decimal            @default(1.00) @map("price_per_seat") @db.Decimal(6, 2)
+  billingCycle BillingCycle       @map("billing_cycle")
+  startedAt    DateTime           @map("started_at") @db.Date
+  renewalDate  DateTime           @map("renewal_date") @db.Date
+  status       SubscriptionStatus @default(active)
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz()
+
+  lar Lar @relation(fields: [larId], references: [id])
+
+  @@index([larId])
+  @@map("subscription")
+}
+
+// ── People ───────────────────────────────────────────────────────────────────
+
+model User {
+  id               String     @id @default(uuid()) @db.Uuid
+  larId            String     @map("lar_id") @db.Uuid
+  email            String
+  passwordHash     String?    @map("password_hash")
+  pinHash          String?    @map("pin_hash")
+  name             String
+  role             UserRole
+  licenceNumber    String?    @map("licence_number")
+  floors           Int[]      @default([])
+  extraPermissions String[]   @default([]) @map("extra_permissions")
+  biometricEnabled Boolean    @default(false) @map("biometric_enabled")
+  status           UserStatus @default(invited)
+  lastLoginAt      DateTime?  @map("last_login_at") @db.Timestamptz()
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+
+  lar              Lar               @relation(fields: [larId], references: [id])
+  shiftAssignments ShiftAssignment[]
+
+  @@unique([larId, email])
+  @@map("user")
+}
+
+model Resident {
+  id                String         @id @default(uuid()) @db.Uuid
+  larId             String         @map("lar_id") @db.Uuid
+  name              String
+  dateOfBirth       DateTime       @map("date_of_birth") @db.Date
+  gender            Gender
+  snsNumber         String         @map("sns_number")
+  nif               String?
+  room              String
+  floor             Int
+  bloodType         BloodType      @default(unknown) @map("blood_type")
+  allergies         String[]       @default([])
+  chronicConditions String[]       @default([]) @map("chronic_conditions")
+  status            ResidentStatus @default(estavel)
+  admittedAt        DateTime       @map("admitted_at") @db.Date
+  archivedAt        DateTime?      @map("archived_at") @db.Timestamptz()
+  archiveReason     ArchiveReason? @map("archive_reason")
+  photoUrl          String?        @map("photo_url")
+  rgpdConsent       Boolean        @default(false) @map("rgpd_consent")
+  rgpdConsentAt     DateTime?      @map("rgpd_consent_at") @db.Date
+  emergencyContact  Json           @map("emergency_contact")
+  assistantDoctor   Json?          @map("assistant_doctor")
+  dnr               Boolean        @default(false)
+  dnrDocumentUrl    String?        @map("dnr_document_url")
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz()
+
+  lar             Lar                        @relation(fields: [larId], references: [id])
+  medications     Medication[]
+  administrations MedicationAdministration[]
+  vitals          VitalReading[]
+  logEntries      LogEntry[]
+  alerts          Alert[]
+  wounds          WoundRecord[]
+  eliminations    EliminationRecord[]
+  activities      ActivityRecord[]
+  tasks           Task[]
+
+  @@unique([larId, snsNumber])
+  @@index([larId, floor])
+  @@map("resident")
+}
+
+// ── Shifts & tasks ───────────────────────────────────────────────────────────
+
+model Shift {
+  id        String    @id @default(uuid()) @db.Uuid
+  larId     String    @map("lar_id") @db.Uuid
+  type      ShiftType
+  startsAt  DateTime  @map("starts_at") @db.Timestamptz()
+  endsAt    DateTime  @map("ends_at") @db.Timestamptz()
+  floor     Int?
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  lar         Lar               @relation(fields: [larId], references: [id])
+  assignments ShiftAssignment[]
+  tasks       Task[]
+
+  @@index([larId, startsAt])
+  @@map("shift")
+}
+
+/// Join table replacing the old uuid[] array (Data Model v1.1) — FK integrity + RLS.
+model ShiftAssignment {
+  id      String @id @default(uuid()) @db.Uuid
+  larId   String @map("lar_id") @db.Uuid
+  shiftId String @map("shift_id") @db.Uuid
+  userId  String @map("user_id") @db.Uuid
+
+  shift Shift @relation(fields: [shiftId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([shiftId, userId])
+  @@index([larId])
+  @@map("shift_assignment")
+}
+
+model Task {
+  id          String       @id @default(uuid()) @db.Uuid
+  larId       String       @map("lar_id") @db.Uuid
+  shiftId     String?      @map("shift_id") @db.Uuid
+  residentId  String?      @map("resident_id") @db.Uuid
+  assignedTo  String?      @map("assigned_to") @db.Uuid
+  title       String
+  category    TaskCategory
+  scheduledAt DateTime     @map("scheduled_at") @db.Timestamptz()
+  completedAt DateTime?    @map("completed_at") @db.Timestamptz()
+  completedBy String?      @map("completed_by") @db.Uuid
+  recurrence  Json?
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz()
+
+  shift    Shift?    @relation(fields: [shiftId], references: [id])
+  resident Resident? @relation(fields: [residentId], references: [id])
+
+  @@index([larId, scheduledAt])
+  @@map("task")
+}
+
+// ── eMAR ─────────────────────────────────────────────────────────────────────
+
+/// The plan — editable only by admin/doctor (Permissions Matrix).
+model Medication {
+  id           String          @id @default(uuid()) @db.Uuid
+  larId        String          @map("lar_id") @db.Uuid
+  residentId   String          @map("resident_id") @db.Uuid
+  drug         String
+  dci          String?
+  dose         String
+  form         MedicationForm
+  route        MedicationRoute
+  schedule     Json
+  condition    String?
+  prescribedBy String          @map("prescribed_by") @db.Uuid
+  startDate    DateTime        @map("start_date") @db.Date
+  endDate      DateTime?       @map("end_date") @db.Date
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz()
+
+  resident        Resident                   @relation(fields: [residentId], references: [id])
+  administrations MedicationAdministration[]
+
+  @@index([larId, residentId])
+  @@map("medication")
+}
+
+/// Append-only event log. Double administration blocked by partial unique index
+/// (migration SQL): UNIQUE (medication_id, scheduled_at) WHERE status = 'taken'.
+/// client_id = device-generated uuid for offline-sync idempotency.
+model MedicationAdministration {
+  id             String               @id @default(uuid()) @db.Uuid
+  larId          String               @map("lar_id") @db.Uuid
+  medicationId   String               @map("medication_id") @db.Uuid
+  residentId     String               @map("resident_id") @db.Uuid
+  scheduledAt    DateTime             @map("scheduled_at") @db.Timestamptz()
+  administeredAt DateTime?            @map("administered_at") @db.Timestamptz()
+  administeredBy String?              @map("administered_by") @db.Uuid
+  status         AdministrationStatus @default(pending)
+  reason         String?
+  notes          String?
+  clientId       String?              @unique @map("client_id") @db.Uuid
+  supersedesId   String?              @map("supersedes_id") @db.Uuid
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz()
+
+  medication Medication @relation(fields: [medicationId], references: [id])
+  resident   Resident   @relation(fields: [residentId], references: [id])
+
+  @@index([larId, residentId, scheduledAt])
+  @@index([medicationId, scheduledAt])
+  @@map("medication_administration")
+}
+
+// ── Clinical records (append-only) ───────────────────────────────────────────
+
+model VitalReading {
+  id           String      @id @default(uuid()) @db.Uuid
+  larId        String      @map("lar_id") @db.Uuid
+  residentId   String      @map("resident_id") @db.Uuid
+  metric       VitalMetric
+  value        Json
+  recordedAt   DateTime    @map("recorded_at") @db.Timestamptz()
+  recordedBy   String      @map("recorded_by") @db.Uuid
+  abnormal     Boolean     @default(false)
+  notes        String?
+  clientId     String?     @unique @map("client_id") @db.Uuid
+  supersedesId String?     @map("supersedes_id") @db.Uuid
+  reason       String?
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+
+  resident Resident @relation(fields: [residentId], references: [id])
+
+  @@index([larId, residentId, recordedAt])
+  @@map("vital_reading")
+}
+
+model LogEntry {
+  id           String      @id @default(uuid()) @db.Uuid
+  larId        String      @map("lar_id") @db.Uuid
+  residentId   String      @map("resident_id") @db.Uuid
+  category     LogCategory
+  kind         String
+  title        String
+  value        String?
+  notes        String?
+  authorId     String      @map("author_id") @db.Uuid
+  flagged      Boolean     @default(false)
+  clientId     String?     @unique @map("client_id") @db.Uuid
+  supersedesId String?     @map("supersedes_id") @db.Uuid
+  reason       String?
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+
+  resident Resident @relation(fields: [residentId], references: [id])
+
+  @@index([larId, residentId, createdAt])
+  @@map("log_entry")
+}
+
+model Alert {
+  id             String        @id @default(uuid()) @db.Uuid
+  larId          String        @map("lar_id") @db.Uuid
+  residentId     String        @map("resident_id") @db.Uuid
+  severity       AlertSeverity
+  source         AlertSource
+  title          String
+  meta           Json?
+  icon           String?
+  acknowledgedBy String?       @map("acknowledged_by") @db.Uuid
+  acknowledgedAt DateTime?     @map("acknowledged_at") @db.Timestamptz()
+  resolvedBy     String?       @map("resolved_by") @db.Uuid
+  resolvedAt     DateTime?     @map("resolved_at") @db.Timestamptz()
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+
+  resident Resident @relation(fields: [residentId], references: [id])
+
+  @@index([larId, severity, createdAt])
+  @@map("alert")
+}
+
+model WoundRecord {
+  id         String      @id @default(uuid()) @db.Uuid
+  larId      String      @map("lar_id") @db.Uuid
+  residentId String      @map("resident_id") @db.Uuid
+  location   String
+  kind       String?
+  grade      Int?
+  status     WoundStatus @default(open)
+  createdBy  String      @map("created_by") @db.Uuid
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+
+  resident Resident @relation(fields: [residentId], references: [id])
+
+  @@index([larId, residentId])
+  @@map("wound_record")
+}
+
+model EliminationRecord {
+  id              String   @id @default(uuid()) @db.Uuid
+  larId           String   @map("lar_id") @db.Uuid
+  residentId      String   @map("resident_id") @db.Uuid
+  kind            String
+  characteristics Json?
+  recordedBy      String   @map("recorded_by") @db.Uuid
+  recordedAt      DateTime @map("recorded_at") @db.Timestamptz()
+  clientId        String?  @unique @map("client_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  resident Resident @relation(fields: [residentId], references: [id])
+
+  @@index([larId, residentId, recordedAt])
+  @@map("elimination_record")
+}
+
+model ActivityRecord {
+  id         String   @id @default(uuid()) @db.Uuid
+  larId      String   @map("lar_id") @db.Uuid
+  residentId String   @map("resident_id") @db.Uuid
+  activity   String
+  engagement Int?
+  mood       String?
+  recordedBy String   @map("recorded_by") @db.Uuid
+  recordedAt DateTime @map("recorded_at") @db.Timestamptz()
+  clientId   String?  @unique @map("client_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  resident Resident @relation(fields: [residentId], references: [id])
+
+  @@index([larId, residentId, recordedAt])
+  @@map("activity_record")
+}
+
+// ── Audit ────────────────────────────────────────────────────────────────────
+
+/// Append-only at the DB level: triggers in the migration block UPDATE/DELETE.
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  larId      String   @map("lar_id") @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id") @db.Uuid
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@index([larId, createdAt])
+  @@index([larId, entityType, entityId])
+  @@map("audit_log")
+}
