@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, Resident } from '@prisma/client';
+import { AuditService } from '../../common/audit/audit.service';
 import { JwtPayload } from '../../common/auth/jwt-payload';
 import { can } from '../../common/auth/permissions';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -21,7 +22,10 @@ interface ListFilters {
 
 @Injectable()
 export class ResidentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /**
    * Scoping de piso é SERVER-SIDE (regra clínica 7): quem não tem
@@ -97,8 +101,16 @@ export class ResidentsService {
       rgpdConsent: dto.rgpd_consent ?? false,
       rgpdConsentAt: dto.rgpd_consent_at ? new Date(dto.rgpd_consent_at) : null,
     };
-    const created = await db.resident.create({ data });
-    await this.audit(actor, 'resident.created', created.id, null, data);
+    const [created] = (await tenantBatch(this.prisma, actor.lar_id, [
+      this.prisma.resident.create({ data }),
+      this.audit.op({
+        larId: actor.lar_id,
+        userId: actor.sub,
+        action: 'resident.created',
+        entityType: 'resident',
+        after: data,
+      }),
+    ])) as [Resident, unknown];
     return toResidentResponse(created);
   }
 
@@ -162,38 +174,16 @@ export class ResidentsService {
   ) {
     const [updated] = await tenantBatch(this.prisma, actor.lar_id, [
       this.prisma.resident.update({ where: { id }, data }),
-      this.prisma.auditLog.create({
-        data: {
-          larId: actor.lar_id,
-          userId: actor.sub,
-          action,
-          entityType: 'resident',
-          entityId: id,
-          before: before as unknown as Prisma.InputJsonValue,
-          after: data as Prisma.InputJsonValue,
-        },
-      }),
-    ]);
-    return toResidentResponse(updated as Resident);
-  }
-
-  private async audit(
-    actor: JwtPayload,
-    action: string,
-    entityId: string,
-    before: unknown,
-    after: unknown,
-  ): Promise<void> {
-    await forTenant(this.prisma, actor.lar_id).auditLog.create({
-      data: {
+      this.audit.op({
         larId: actor.lar_id,
         userId: actor.sub,
         action,
         entityType: 'resident',
-        entityId,
-        before: (before as Prisma.InputJsonValue) ?? Prisma.JsonNull,
-        after: (after as Prisma.InputJsonValue) ?? Prisma.JsonNull,
-      },
-    });
+        entityId: id,
+        before,
+        after: data,
+      }),
+    ]);
+    return toResidentResponse(updated as Resident);
   }
 }

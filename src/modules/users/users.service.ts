@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AuditService } from '../../common/audit/audit.service';
 import { JwtPayload } from '../../common/auth/jwt-payload';
 import { PrismaService } from '../../prisma/prisma.service';
 import { forTenant, tenantBatch } from '../../prisma/tenant';
@@ -39,6 +40,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokens: TokenService,
+    private readonly audit: AuditService,
   ) {}
 
   list(actor: JwtPayload) {
@@ -81,16 +83,14 @@ export class UsersService {
     };
     const [updated] = await tenantBatch(this.prisma, actor.lar_id, [
       this.prisma.user.update({ where: { id }, data, select: ADMIN_SELECT }),
-      this.prisma.auditLog.create({
-        data: {
-          larId: actor.lar_id,
-          userId: actor.sub,
-          action: 'user.updated',
-          entityType: 'user',
-          entityId: id,
-          before: existing as unknown as Prisma.InputJsonValue,
-          after: data as Prisma.InputJsonValue,
-        },
+      this.audit.op({
+        larId: actor.lar_id,
+        userId: actor.sub,
+        action: 'user.updated',
+        entityType: 'user',
+        entityId: id,
+        before: existing,
+        after: data,
       }),
     ]);
     return updated;
@@ -109,14 +109,12 @@ export class UsersService {
         where: { id },
         data: { status: active ? 'active' : 'disabled' },
       }),
-      this.prisma.auditLog.create({
-        data: {
-          larId: actor.lar_id,
-          userId: actor.sub,
-          action: active ? 'user.reactivated' : 'user.deactivated',
-          entityType: 'user',
-          entityId: id,
-        },
+      this.audit.op({
+        larId: actor.lar_id,
+        userId: actor.sub,
+        action: active ? 'user.reactivated' : 'user.deactivated',
+        entityType: 'user',
+        entityId: id,
       }),
     ]);
     if (!active) {
