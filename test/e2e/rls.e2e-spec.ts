@@ -11,7 +11,10 @@ import { forTenant } from '../../src/prisma/tenant';
  * When the database is unreachable the suite SKIPS (warns loudly) so the
  * rest of the e2e suite still runs on machines without Docker.
  */
-const url = process.env.DATABASE_URL ?? 'postgresql://caresync:caresync@localhost:5432/caresync';
+// App role (NOSUPERUSER) — connecting as the superuser would bypass RLS and
+// invalidate everything this suite proves.
+const url =
+  process.env.DATABASE_URL ?? 'postgresql://caresync_app:caresync_app@localhost:5432/caresync';
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
 let dbUp = false;
@@ -65,13 +68,16 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (dbUp) {
-    // tenant context required even for cleanup — FORCE RLS applies to owner
-    const a = forTenant(prisma, larA);
-    const b = forTenant(prisma, larB);
-    await a.resident.deleteMany({});
-    await b.resident.deleteMany({});
-    await a.lar.deleteMany({});
-    await b.lar.deleteMany({});
+    // tenant context required even for cleanup; FK order: children first.
+    // audit_log rows stay by design (append-only) — random lar ids keep
+    // re-runs collision-free.
+    for (const larId of [larA, larB]) {
+      const t = forTenant(prisma, larId);
+      await t.medicationAdministration.deleteMany({});
+      await t.medication.deleteMany({});
+      await t.resident.deleteMany({});
+      await t.lar.deleteMany({});
+    }
   }
   await prisma.$disconnect();
 });
@@ -148,9 +154,13 @@ describe('Row-Level Security (real Postgres)', () => {
         entityType: 'test',
       },
     });
+    // Two layers block mutation: REVOKE on the app role ("permission denied")
+    // fires first; the trigger ("append-only") backstops owner connections.
     await expect(
       a.auditLog.update({ where: { id: entry.id }, data: { action: 'tampered' } }),
-    ).rejects.toThrow(/append-only/);
-    await expect(a.auditLog.delete({ where: { id: entry.id } })).rejects.toThrow(/append-only/);
+    ).rejects.toThrow(/append-only|permission denied/);
+    await expect(a.auditLog.delete({ where: { id: entry.id } })).rejects.toThrow(
+      /append-only|permission denied/,
+    );
   });
 });

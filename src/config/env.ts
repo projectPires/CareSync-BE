@@ -2,8 +2,10 @@ import { z } from 'zod';
 
 // Defaults match docker-compose so local dev boots with zero config.
 // In production, defaults are refused: every value must be set explicitly.
+// The app connects as caresync_app (NOSUPERUSER, NOBYPASSRLS) — never as the
+// owner/superuser, which would silently bypass row-level security.
 const DEV_DEFAULTS = {
-  DATABASE_URL: 'postgresql://caresync:caresync@localhost:5432/caresync',
+  DATABASE_URL: 'postgresql://caresync_app:caresync_app@localhost:5432/caresync',
   REDIS_URL: 'redis://localhost:6379',
   S3_ENDPOINT: 'http://localhost:9000',
   S3_ACCESS_KEY: 'minioadmin',

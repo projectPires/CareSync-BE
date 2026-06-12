@@ -12,7 +12,11 @@ try {
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   datasource: {
-    url: process.env.DATABASE_URL ?? 'postgresql://caresync:caresync@localhost:5432/caresync',
+    // Migrations run as the table OWNER (superuser in dev) — the app itself
+    // connects as caresync_app (no RLS bypass). Two distinct URLs on purpose.
+    url:
+      process.env.MIGRATION_DATABASE_URL ??
+      'postgresql://caresync:caresync@localhost:5432/caresync',
   },
   migrations: {
     path: 'prisma/migrations',

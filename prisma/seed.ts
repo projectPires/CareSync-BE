@@ -12,7 +12,8 @@ import { forTenant } from '../src/prisma/tenant';
 const DEMO_LAR_ID = 'a0000000-0000-4000-8000-000000000001';
 
 async function main(): Promise<void> {
-  const url = process.env.DATABASE_URL ?? 'postgresql://caresync:caresync@localhost:5432/caresync';
+  const url =
+    process.env.DATABASE_URL ?? 'postgresql://caresync_app:caresync_app@localhost:5432/caresync';
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
   const db = forTenant(prisma, DEMO_LAR_ID);
 
