@@ -1,13 +1,12 @@
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { buildOpenApiDocument } from '../src/openapi';
 
 async function main(): Promise<void> {
   const app = await NestFactory.create(AppModule, { logger: false });
-  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+  app.setGlobalPrefix('api');
   const document = buildOpenApiDocument(app);
   const out = resolve(__dirname, '..', 'openapi.json');
   writeFileSync(out, `${JSON.stringify(document, null, 2)}\n`);

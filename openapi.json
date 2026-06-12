@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/v1/health": {
+    "/api/health": {
       "get": {
-        "operationId": "HealthController_check_v1",
+        "operationId": "HealthController_check",
         "parameters": [],
         "responses": {
           "200": {
@@ -19,9 +19,9 @@
         ]
       }
     },
-    "/v1/auth/login": {
+    "/api/auth/login": {
       "post": {
-        "operationId": "AuthController_login_v1",
+        "operationId": "AuthController_login",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -60,9 +60,9 @@
         ]
       }
     },
-    "/v1/auth/pin": {
+    "/api/auth/pin": {
       "post": {
-        "operationId": "AuthController_pinLogin_v1",
+        "operationId": "AuthController_pinLogin",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -98,7 +98,7 @@
         ]
       },
       "put": {
-        "operationId": "AuthController_setPin_v1",
+        "operationId": "AuthController_setPin",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -126,9 +126,9 @@
         ]
       }
     },
-    "/v1/auth/refresh": {
+    "/api/auth/refresh": {
       "post": {
-        "operationId": "AuthController_refresh_v1",
+        "operationId": "AuthController_refresh",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -161,9 +161,9 @@
         ]
       }
     },
-    "/v1/auth/logout": {
+    "/api/auth/logout": {
       "post": {
-        "operationId": "AuthController_logout_v1",
+        "operationId": "AuthController_logout",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -186,9 +186,9 @@
         ]
       }
     },
-    "/v1/auth/invite": {
+    "/api/auth/invite": {
       "post": {
-        "operationId": "AuthController_invite_v1",
+        "operationId": "AuthController_invite",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -225,9 +225,9 @@
         ]
       }
     },
-    "/v1/auth/invite/accept": {
+    "/api/auth/invite/accept": {
       "post": {
-        "operationId": "AuthController_acceptInvite_v1",
+        "operationId": "AuthController_acceptInvite",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -256,9 +256,9 @@
         ]
       }
     },
-    "/v1/auth/invite/resend": {
+    "/api/auth/invite/resend": {
       "post": {
-        "operationId": "AuthController_resendInvite_v1",
+        "operationId": "AuthController_resendInvite",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -307,7 +307,8 @@
             "example": "helena@larbemestar.pt"
           },
           "password": {
-            "type": "string"
+            "type": "string",
+            "example": "demo-admin-123"
           },
           "lar_id": {
             "type": "string",
@@ -386,7 +387,8 @@
         "properties": {
           "refresh_token": {
             "type": "string",
-            "description": "Refresh token opaco recebido no login"
+            "description": "Refresh token opaco recebido no login (formato \"<id>.<segredo>\")",
+            "example": "8df11de1-a3aa-4aa9-b423-8038729b0153.kQ3xJ9mP2vL8nR5tW7yB4cF6hD1gS0aZ"
           }
         },
         "required": [
@@ -434,10 +436,12 @@
         "properties": {
           "token": {
             "type": "string",
-            "description": "Token do email de convite"
+            "description": "Token do email de convite (formato \"<id>.<segredo>\")",
+            "example": "3f2a1b00-9c8d-4e7f-a6b5-c4d3e2f1a0b9.mN8xK2pQ7vR4tY6wB3cZ"
           },
           "password": {
-            "type": "string"
+            "type": "string",
+            "example": "a-minha-password-segura"
           }
         },
         "required": [

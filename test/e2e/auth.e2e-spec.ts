@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
@@ -61,7 +61,7 @@ beforeAll(async () => {
 
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   app = moduleRef.createNestApplication();
-  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+  app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new AllExceptionsFilter());
   await app.init();
@@ -86,7 +86,9 @@ const http = () => request(app?.getHttpServer());
 describe('Auth (e2e, real Postgres + Redis)', () => {
   it('login → access + refresh + user payload, no hashes serialized', async () => {
     if (!dbUp) return;
-    const res = await http().post('/v1/auth/login').send({ email: adminEmail, password: PASSWORD });
+    const res = await http()
+      .post('/api/auth/login')
+      .send({ email: adminEmail, password: PASSWORD });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeDefined();
     expect(res.body.refresh_token).toMatch(/^[0-9a-f-]{36}\./);
@@ -97,7 +99,7 @@ describe('Auth (e2e, real Postgres + Redis)', () => {
   it('wrong password → uniform 401', async () => {
     if (!dbUp) return;
     const res = await http()
-      .post('/v1/auth/login')
+      .post('/api/auth/login')
       .send({ email: adminEmail, password: 'wrong-password' });
     expect(res.status).toBe(401);
     expect(res.body.message).toBe('Credenciais inválidas');
@@ -106,7 +108,7 @@ describe('Auth (e2e, real Postgres + Redis)', () => {
   it('unknown email → same uniform 401 (no user oracle)', async () => {
     if (!dbUp) return;
     const res = await http()
-      .post('/v1/auth/login')
+      .post('/api/auth/login')
       .send({ email: `ghost-${suffix}@auth-e2e.pt`, password: 'whatever-123' });
     expect(res.status).toBe(401);
     expect(res.body.message).toBe('Credenciais inválidas');
@@ -114,7 +116,7 @@ describe('Auth (e2e, real Postgres + Redis)', () => {
 
   it('PIN login works', async () => {
     if (!dbUp) return;
-    const res = await http().post('/v1/auth/pin').send({ email: adminEmail, pin: '1234' });
+    const res = await http().post('/api/auth/pin').send({ email: adminEmail, pin: '1234' });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeDefined();
   });
@@ -122,32 +124,32 @@ describe('Auth (e2e, real Postgres + Redis)', () => {
   it('refresh rotates; reusing the old token revokes the family', async () => {
     if (!dbUp) return;
     const login = await http()
-      .post('/v1/auth/login')
+      .post('/api/auth/login')
       .send({ email: adminEmail, password: PASSWORD });
     const r1 = login.body.refresh_token;
 
-    const rot = await http().post('/v1/auth/refresh').send({ refresh_token: r1 });
+    const rot = await http().post('/api/auth/refresh').send({ refresh_token: r1 });
     expect(rot.status).toBe(200);
     const r2 = rot.body.refresh_token;
     expect(r2).not.toBe(r1);
 
-    const reuse = await http().post('/v1/auth/refresh').send({ refresh_token: r1 });
+    const reuse = await http().post('/api/auth/refresh').send({ refresh_token: r1 });
     expect(reuse.status).toBe(401); // theft signal
 
-    const afterRevoke = await http().post('/v1/auth/refresh').send({ refresh_token: r2 });
+    const afterRevoke = await http().post('/api/auth/refresh').send({ refresh_token: r2 });
     expect(afterRevoke.status).toBe(401); // whole family dead
   });
 
   it('protected route without token → 401; with token → not 401', async () => {
     if (!dbUp) return;
-    const noToken = await http().put('/v1/auth/pin').send({ pin: '5678' });
+    const noToken = await http().put('/api/auth/pin').send({ pin: '5678' });
     expect(noToken.status).toBe(401);
 
     const login = await http()
-      .post('/v1/auth/login')
+      .post('/api/auth/login')
       .send({ email: adminEmail, password: PASSWORD });
     const withToken = await http()
-      .put('/v1/auth/pin')
+      .put('/api/auth/pin')
       .set('Authorization', `Bearer ${login.body.access_token}`)
       .send({ pin: '5678' });
     expect(withToken.status).toBe(200);
@@ -156,12 +158,12 @@ describe('Auth (e2e, real Postgres + Redis)', () => {
   it('full invite flow: invite (admin) → accept → login as new user', async () => {
     if (!dbUp) return;
     const login = await http()
-      .post('/v1/auth/login')
+      .post('/api/auth/login')
       .send({ email: adminEmail, password: PASSWORD });
     const bearer = `Bearer ${login.body.access_token}`;
 
     const invite = await http()
-      .post('/v1/auth/invite')
+      .post('/api/auth/invite')
       .set('Authorization', bearer)
       .send({
         email: nurseEmail,
@@ -177,12 +179,12 @@ describe('Auth (e2e, real Postgres + Redis)', () => {
     expect(token).toBeTruthy();
 
     const accept = await http()
-      .post('/v1/auth/invite/accept')
+      .post('/api/auth/invite/accept')
       .send({ token, password: 'nurse-password-1' });
     expect(accept.status).toBe(200);
 
     const nurseLogin = await http()
-      .post('/v1/auth/login')
+      .post('/api/auth/login')
       .send({ email: nurseEmail, password: 'nurse-password-1' });
     expect(nurseLogin.status).toBe(200);
     expect(nurseLogin.body.user.role).toBe('nurse');
@@ -191,10 +193,10 @@ describe('Auth (e2e, real Postgres + Redis)', () => {
   it('non-admin cannot invite (403)', async () => {
     if (!dbUp) return;
     const nurseLogin = await http()
-      .post('/v1/auth/login')
+      .post('/api/auth/login')
       .send({ email: nurseEmail, password: 'nurse-password-1' });
     const res = await http()
-      .post('/v1/auth/invite')
+      .post('/api/auth/invite')
       .set('Authorization', `Bearer ${nurseLogin.body.access_token}`)
       .send({ email: `x-${suffix}@auth-e2e.pt`, name: 'Xavier', role: 'aide', floors: [1] });
     expect(res.status).toBe(403);
@@ -204,10 +206,10 @@ describe('Auth (e2e, real Postgres + Redis)', () => {
     if (!dbUp) return;
     const email = nurseEmail;
     for (let i = 0; i < 5; i++) {
-      await http().post('/v1/auth/login').send({ email, password: 'totally-wrong-1' });
+      await http().post('/api/auth/login').send({ email, password: 'totally-wrong-1' });
     }
     const locked = await http()
-      .post('/v1/auth/login')
+      .post('/api/auth/login')
       .send({ email, password: 'nurse-password-1' });
     expect(locked.status).toBe(423);
   });
