@@ -7,9 +7,17 @@
 
 ## What this project is
 
-**CareSync-BE** — the backend for **CareSync**, a SaaS B2B product for the clinical management of Portuguese elderly care homes (ERPI / Lares). The mobile apps (Admin + Worker, Expo/React Native) live in `projectPires/CareSync`; this repo is the API they talk to.
+**CareSync-BE** — the backend for **CareSync**, a SaaS B2B product for the clinical management of Portuguese elderly care homes (ERPI / Lares). This repo is the API all clients consume:
 
-- **Personal project** of Ivo Pires (not an Improxy/IMPROXY product — that rationale already killed .NET and may kill Azure).
+| Client | Audience | Platform | Repo |
+|---|---|---|---|
+| **Worker App** | Nurses, aides, doctors | Mobile (Expo/RN) | `projectPires/CareSync` |
+| **Admin Web** | Diretor(a) Técnico(a) do Lar | Web (browser) | to be created |
+| **Back-office** | CareSync internal (Ivo) — subscriptions, provisioning, product metrics | Web (browser) | to be created |
+
+Decided 2026-06-12: the mobile app is **workers-only**; the Lar admin works in the web panel; CareSync manages the business in the internal back-office (cross-tenant access via internal role + explicit audit — see multi-tenancy rules).
+
+- **Personal project** of Ivo Pires — domain `caresync.pt`, no corporate stack to align with.
 - **Pricing:** 1 €/resident/month, unlimited workers.
 - **USP — the INEM module:** the Worker App generates a clinical handover PDF for the Portuguese 112/INEM ambulance service in < 2 s, fully offline. The PDF renders **on-device**; this backend's job is to guarantee the emergency dataset is complete, correct, and already in the device cache before the emergency happens.
 
@@ -19,7 +27,7 @@
 
 | Decision | Choice | Why |
 |---|---|---|
-| API style | REST + OpenAPI 3, `/v1` prefix | NestJS emits the spec; mobile codegens a typed client (no monorepo) |
+| API style | REST + OpenAPI 3, `/v1` prefix | NestJS emits the spec; mobile + web clients codegen typed clients (no monorepo) |
 | Runtime | Node 22 LTS + NestJS + TypeScript strict | TS end-to-end with mobile |
 | ORM | Prisma | RLS via client extension wrapping every op in `$transaction` + `set_config` |
 | Database | PostgreSQL 16 | RLS multi-tenant by `lar_id`, jsonb, `pg_trgm` search |
@@ -55,7 +63,7 @@ Enforced by `clinical-safety-reviewer` (veto power).
 
 ## 12 backend RGPD red lines (any violation = BLOCK)
 
-Enforced by `rgpd-compliance` (veto power; escalates breaches to `rgpd@improxy.pt`).
+Enforced by `rgpd-compliance` (veto power; escalates breaches to `rgpd@caresync.pt`).
 
 1. **No clinical data or PII in logs.** IDs only. Logger serializer redacts; Sentry `beforeSend` scrubs.
 2. **EU data residency only** (Frankfurt / Amsterdam / Lisbon) — DB, Redis, S3, backups.
@@ -247,9 +255,9 @@ pnpm openapi:export         # write openapi.json (mobile codegen input)
 
 ## Decision owners
 
-- **Product / Roadmap / Tech:** Ivo Pires (`ivo.pires@improxy.com`).
+- **Product / Roadmap / Tech:** Ivo Pires (`ivo@caresync.pt`).
 - **Clinical validation:** Cláudia.
-- **DPO (public):** `rgpd@improxy.pt`.
+- **DPO (public):** `rgpd@caresync.pt`.
 
 ## Pointers
 
