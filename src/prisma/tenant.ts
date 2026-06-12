@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 /**
  * Tenant-scoped Prisma client (the ONLY way to touch tenant tables).
@@ -32,3 +32,22 @@ export function forTenant(prisma: PrismaClient, larId: string) {
 }
 
 export type TenantClient = ReturnType<typeof forTenant>;
+
+/**
+ * Várias operações na MESMA transação com contexto de tenant — usar quando a
+ * atomicidade importa (ex: mutação + entrada de audit log, regra clínica 5).
+ * As ops são PrismaPromises construídas no cliente BASE (não no extendido):
+ *   tenantBatch(prisma, larId, [prisma.resident.update(...), prisma.auditLog.create(...)])
+ */
+export function tenantBatch<T extends Prisma.PrismaPromise<unknown>[]>(
+  prisma: PrismaClient,
+  larId: string,
+  ops: [...T],
+) {
+  return prisma
+    .$transaction([
+      prisma.$executeRaw`SELECT set_config('app.current_lar_id', ${larId}, TRUE)`,
+      ...ops,
+    ])
+    .then((results) => results.slice(1));
+}

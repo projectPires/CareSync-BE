@@ -280,6 +280,503 @@
           "auth"
         ]
       }
+    },
+    "/api/lar": {
+      "get": {
+        "operationId": "LaresController_getOwn",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Sem permissão lar.read"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Dados do próprio Lar (admin)",
+        "tags": [
+          "lar"
+        ]
+      },
+      "patch": {
+        "operationId": "LaresController_updateOwn",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLarDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Atualizar dados administrativos do Lar (admin)",
+        "tags": [
+          "lar"
+        ]
+      }
+    },
+    "/api/users": {
+      "get": {
+        "operationId": "UsersController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lista de workers — admin vê tudo; workers projeção mínima",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "operationId": "UsersController_getById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Detalhe de worker (projeção conforme o role)",
+        "tags": [
+          "users"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "422": {
+            "description": "Cédula em falta para nurse/doctor"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Editar role / pisos / cédula / nome (admin)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/users/{id}/deactivate": {
+      "post": {
+        "operationId": "UsersController_deactivate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Desativar worker — revoga todas as sessões",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/users/{id}/reactivate": {
+      "post": {
+        "operationId": "UsersController_reactivate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reativar worker desativado",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/residents": {
+      "get": {
+        "operationId": "ResidentsController_list",
+        "parameters": [
+          {
+            "name": "floor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "estavel",
+                "atencao",
+                "critico",
+                "recuperacao"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_archived",
+            "required": false,
+            "in": "query",
+            "description": "Só admin",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lista de residentes — workers veem só os seus pisos (server-side)",
+        "tags": [
+          "residents"
+        ]
+      },
+      "post": {
+        "operationId": "ResidentsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateResidentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "409": {
+            "description": "Número SNS duplicado neste Lar"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Criar residente (admin)",
+        "tags": [
+          "residents"
+        ]
+      }
+    },
+    "/api/residents/{id}": {
+      "get": {
+        "operationId": "ResidentsController_getById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Detalhe do residente (404 fora dos pisos do worker)",
+        "tags": [
+          "residents"
+        ]
+      },
+      "patch": {
+        "operationId": "ResidentsController_updateAdmin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateResidentAdminDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Editar dados administrativos — SNS, NIF, quarto, contactos (admin)",
+        "tags": [
+          "residents"
+        ]
+      }
+    },
+    "/api/residents/{id}/clinical": {
+      "patch": {
+        "operationId": "ResidentsController_updateClinical",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateResidentClinicalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Editar dados clínicos — alergias, condições, estado (admin/nurse/doctor)",
+        "tags": [
+          "residents"
+        ]
+      }
+    },
+    "/api/residents/{id}/dnr": {
+      "patch": {
+        "operationId": "ResidentsController_updateDnr",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDnrDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Editar diretiva DNR (admin/doctor)",
+        "tags": [
+          "residents"
+        ]
+      }
+    },
+    "/api/residents/{id}/archive": {
+      "post": {
+        "operationId": "ResidentsController_archive",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveResidentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "409": {
+            "description": "Já arquivado"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Arquivar residente (óbito/alta/transferência) — soft-delete, admin",
+        "tags": [
+          "residents"
+        ]
+      }
     }
   },
   "info": {
@@ -458,6 +955,278 @@
         },
         "required": [
           "email"
+        ]
+      },
+      "UpdateLarDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Lar Bem-Estar"
+          },
+          "legal_name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "object",
+            "example": {
+              "street": "Rua das Flores 12",
+              "postal": "1200-192",
+              "city": "Lisboa"
+            }
+          },
+          "floors": {
+            "type": "number",
+            "description": "Número de pisos clínicos"
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Capacidade total (camas)"
+          },
+          "config": {
+            "type": "object",
+            "description": "Rácios mínimos, horários de turnos padrão, etc."
+          }
+        }
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "nurse",
+              "aide",
+              "doctor"
+            ]
+          },
+          "floors": {
+            "description": "Pisos atribuídos",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "licence_number": {
+            "type": "string",
+            "description": "Cédula profissional (obrigatória para nurse/doctor)"
+          }
+        }
+      },
+      "CreateResidentDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Manuel Sousa"
+          },
+          "date_of_birth": {
+            "type": "string",
+            "example": "1940-05-15"
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "f",
+              "m",
+              "nb",
+              "not_disclosed"
+            ]
+          },
+          "sns_number": {
+            "type": "string",
+            "description": "Número SNS — único por Lar",
+            "example": "111222333"
+          },
+          "nif": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string",
+            "example": "101"
+          },
+          "floor": {
+            "type": "number",
+            "example": 1
+          },
+          "blood_type": {
+            "type": "string",
+            "enum": [
+              "a_pos",
+              "a_neg",
+              "b_pos",
+              "b_neg",
+              "ab_pos",
+              "ab_neg",
+              "o_pos",
+              "o_neg",
+              "unknown"
+            ],
+            "default": "unknown"
+          },
+          "allergies": {
+            "example": [
+              "Penicilina"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "chronic_conditions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "admitted_at": {
+            "type": "string",
+            "example": "2026-01-10"
+          },
+          "emergency_contact": {
+            "type": "object",
+            "example": {
+              "name": "Maria Sousa",
+              "relation": "filha",
+              "phone": "+351 910 000 000"
+            }
+          },
+          "assistant_doctor": {
+            "type": "object",
+            "example": {
+              "name": "Dr. Luís",
+              "licence": "12345",
+              "phone": "+351 210 000 000"
+            }
+          },
+          "rgpd_consent": {
+            "type": "boolean",
+            "description": "Consentimento RGPD assinado",
+            "default": false
+          },
+          "rgpd_consent_at": {
+            "type": "string",
+            "example": "2026-01-10"
+          }
+        },
+        "required": [
+          "name",
+          "date_of_birth",
+          "gender",
+          "sns_number",
+          "room",
+          "floor",
+          "admitted_at",
+          "emergency_contact"
+        ]
+      },
+      "UpdateResidentAdminDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "sns_number": {
+            "type": "string"
+          },
+          "nif": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          },
+          "floor": {
+            "type": "number"
+          },
+          "emergency_contact": {
+            "type": "object"
+          },
+          "assistant_doctor": {
+            "type": "object"
+          },
+          "rgpd_consent": {
+            "type": "boolean"
+          },
+          "rgpd_consent_at": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateResidentClinicalDto": {
+        "type": "object",
+        "properties": {
+          "allergies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "chronic_conditions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "blood_type": {
+            "type": "string",
+            "enum": [
+              "a_pos",
+              "a_neg",
+              "b_pos",
+              "b_neg",
+              "ab_pos",
+              "ab_neg",
+              "o_pos",
+              "o_neg",
+              "unknown"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "estavel",
+              "atencao",
+              "critico",
+              "recuperacao"
+            ],
+            "description": "Estado clínico"
+          }
+        }
+      },
+      "UpdateDnrDto": {
+        "type": "object",
+        "properties": {
+          "dnr": {
+            "type": "boolean",
+            "description": "Diretiva DNR ativa"
+          },
+          "dnr_document_url": {
+            "type": "string",
+            "description": "PDF da diretiva assinada"
+          }
+        },
+        "required": [
+          "dnr"
+        ]
+      },
+      "ArchiveResidentDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "enum": [
+              "death",
+              "discharge",
+              "transfer",
+              "other"
+            ]
+          }
+        },
+        "required": [
+          "reason"
         ]
       }
     }
