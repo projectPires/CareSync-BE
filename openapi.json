@@ -18,6 +18,268 @@
           "health"
         ]
       }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "operationId": "AuthController_login_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciais inválidas (uniforme, sem oracle)"
+          },
+          "409": {
+            "description": "Email em vários Lares — repetir com lar_id"
+          },
+          "423": {
+            "description": "Conta bloqueada (5 falhas / 5 min → 30 min)"
+          }
+        },
+        "summary": "Login email + password → JWT 15 min + refresh 30 d",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/pin": {
+      "post": {
+        "operationId": "AuthController_pinLogin_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PinLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "PIN inválido ou não configurado"
+          },
+          "423": {
+            "description": "Conta bloqueada"
+          }
+        },
+        "summary": "Login por PIN (4–6 dígitos) → JWT",
+        "tags": [
+          "auth"
+        ]
+      },
+      "put": {
+        "operationId": "AuthController_setPin_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPinDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Definir/alterar o próprio PIN (autenticado)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token inválido / expirado / reutilizado"
+          }
+        },
+        "summary": "Roda o refresh token (reuse → família revogada)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "summary": "Revoga a família do refresh token apresentado",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/invite": {
+      "post": {
+        "operationId": "AuthController_invite_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Em dev devolve accept_url (sem mailer ainda)"
+          },
+          "403": {
+            "description": "Só admins convidam"
+          },
+          "409": {
+            "description": "Email já existe neste Lar"
+          },
+          "422": {
+            "description": "Cédula em falta para nurse/doctor"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Convidar worker (admin) — email com link 24 h",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/invite/accept": {
+      "post": {
+        "operationId": "AuthController_acceptInvite_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptInviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "401": {
+            "description": "Convite inválido"
+          },
+          "410": {
+            "description": "Convite expirado — usar /invite/resend"
+          }
+        },
+        "summary": "Aceitar convite: define password e ativa a conta",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/invite/resend": {
+      "post": {
+        "operationId": "AuthController_resendInvite_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendInviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Reemitir convite expirado (resposta uniforme, sem oracle)",
+        "tags": [
+          "auth"
+        ]
+      }
     }
   },
   "info": {
@@ -36,6 +298,164 @@
         "type": "http"
       }
     },
-    "schemas": {}
+    "schemas": {
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "helena@larbemestar.pt"
+          },
+          "password": {
+            "type": "string"
+          },
+          "lar_id": {
+            "type": "string",
+            "description": "Desambiguação quando o mesmo email existe em mais do que um Lar"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "TokenPairResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Opaco; rotativo — cada refresh devolve um novo"
+          },
+          "user": {
+            "type": "object",
+            "example": {
+              "id": "uuid",
+              "lar_id": "uuid",
+              "name": "Sofia",
+              "role": "nurse",
+              "floors": [
+                2
+              ],
+              "extra_permissions": []
+            }
+          }
+        },
+        "required": [
+          "access_token",
+          "refresh_token",
+          "user"
+        ]
+      },
+      "PinLoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "pin": {
+            "type": "string",
+            "description": "PIN de 4–6 dígitos",
+            "example": "1234"
+          },
+          "lar_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "pin"
+        ]
+      },
+      "SetPinDto": {
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "string",
+            "description": "PIN de 4–6 dígitos"
+          }
+        },
+        "required": [
+          "pin"
+        ]
+      },
+      "RefreshDto": {
+        "type": "object",
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "description": "Refresh token opaco recebido no login"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ]
+      },
+      "InviteDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "nurse",
+              "aide",
+              "doctor"
+            ]
+          },
+          "floors": {
+            "description": "Pisos atribuídos",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "licence_number": {
+            "type": "string",
+            "description": "Cédula profissional (obrigatória para nurse/doctor)"
+          }
+        },
+        "required": [
+          "email",
+          "name",
+          "role",
+          "floors"
+        ]
+      },
+      "AcceptInviteDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token do email de convite"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "password"
+        ]
+      },
+      "ResendInviteDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      }
+    }
   }
 }

@@ -216,9 +216,49 @@ model User {
 
   lar              Lar               @relation(fields: [larId], references: [id])
   shiftAssignments ShiftAssignment[]
+  refreshTokens    RefreshToken[]
+  inviteTokens     InviteToken[]
 
   @@unique([larId, email])
   @@map("user")
+}
+
+// ── Auth (system tables — no lar_id, no RLS) ─────────────────────────────────
+// Hold only hashes + FKs. Pre-tenant lookups (login/refresh) happen via
+// SECURITY DEFINER functions owned by caresync_auth (BYPASSRLS) — see migration.
+
+/// Rotating refresh tokens. Token string = "<id>.<secret>"; only sha256(secret)
+/// is stored. rotated_at != null on presentation = REUSE → whole family revoked.
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  familyId  String    @map("family_id") @db.Uuid
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz()
+  rotatedAt DateTime? @map("rotated_at") @db.Timestamptz()
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz()
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([familyId])
+  @@index([userId])
+  @@map("refresh_token")
+}
+
+/// Single-use invite tokens (24 h). Only sha256(secret) stored.
+model InviteToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz()
+  usedAt    DateTime? @map("used_at") @db.Timestamptz()
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("invite_token")
 }
 
 model Resident {

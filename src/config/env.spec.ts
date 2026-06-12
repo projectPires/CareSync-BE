@@ -36,6 +36,7 @@ describe('validateEnv', () => {
       S3_ENDPOINT: 'https://s3.eu-central-1.example.com',
       S3_ACCESS_KEY: 'real-key',
       S3_SECRET_KEY: 'real-secret',
+      JWT_SECRET: 'a-real-production-secret-with-entropy',
     });
     expect(env.NODE_ENV).toBe('production');
   });
