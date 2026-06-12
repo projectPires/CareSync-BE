@@ -5,7 +5,7 @@ describe('validateEnv', () => {
     const env = validateEnv({});
     expect(env.NODE_ENV).toBe('development');
     expect(env.PORT).toBe(3000);
-    expect(env.DATABASE_URL).toBe('postgresql://caresync:caresync@localhost:5432/caresync');
+    expect(env.DATABASE_URL).toBe('postgresql://caresync_app:caresync_app@localhost:5432/caresync');
     expect(env.REDIS_URL).toBe('redis://localhost:6379');
     expect(env.S3_BUCKET).toBe('caresync');
   });

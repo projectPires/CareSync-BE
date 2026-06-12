@@ -476,8 +476,8 @@ ALTER TABLE "activity_record" ADD CONSTRAINT "activity_record_resident_id_fkey" 
 ALTER TABLE "lar" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "lar" FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation ON "lar"
-  USING (id = current_setting('app.current_lar_id', true)::uuid)
-  WITH CHECK (id = current_setting('app.current_lar_id', true)::uuid);
+  USING (id = NULLIF(current_setting('app.current_lar_id', true), '')::uuid)
+  WITH CHECK (id = NULLIF(current_setting('app.current_lar_id', true), '')::uuid);
 
 -- Every tenant table: lar_id must match the transaction-local tenant context.
 DO $$
@@ -493,8 +493,8 @@ BEGIN
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
     EXECUTE format(
       'CREATE POLICY tenant_isolation ON %I
-         USING (lar_id = current_setting(''app.current_lar_id'', true)::uuid)
-         WITH CHECK (lar_id = current_setting(''app.current_lar_id'', true)::uuid)',
+         USING (lar_id = NULLIF(current_setting(''app.current_lar_id'', true), '''')::uuid)
+         WITH CHECK (lar_id = NULLIF(current_setting(''app.current_lar_id'', true), '''')::uuid)',
       t
     );
   END LOOP;
@@ -523,3 +523,14 @@ CREATE TRIGGER audit_log_no_update
 CREATE TRIGGER audit_log_no_delete
   BEFORE DELETE ON "audit_log"
   FOR EACH ROW EXECUTE FUNCTION forbid_audit_mutation();
+
+-- ── App-role hardening (RGPD red line 12) ────────────────────────────────────
+-- Belt + braces with the triggers above: the runtime role also loses the
+-- UPDATE/DELETE grants on audit_log. Conditional — the role exists in
+-- dev (docker initdb) and in provisioned environments.
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'caresync_app') THEN
+    REVOKE UPDATE, DELETE ON "audit_log" FROM caresync_app;
+  END IF;
+END $$;
