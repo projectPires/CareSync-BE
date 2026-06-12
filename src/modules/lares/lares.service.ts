@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AuditService } from '../../common/audit/audit.service';
 import { JwtPayload } from '../../common/auth/jwt-payload';
 import { PrismaService } from '../../prisma/prisma.service';
 import { forTenant, tenantBatch } from '../../prisma/tenant';
@@ -7,7 +8,10 @@ import { UpdateLarDto } from './dto/lar.dto';
 
 @Injectable()
 export class LaresService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async getOwn(actor: JwtPayload) {
     const lar = await forTenant(this.prisma, actor.lar_id).lar.findUnique({
@@ -29,16 +33,14 @@ export class LaresService {
     };
     const [updated] = await tenantBatch(this.prisma, actor.lar_id, [
       this.prisma.lar.update({ where: { id: actor.lar_id }, data }),
-      this.prisma.auditLog.create({
-        data: {
-          larId: actor.lar_id,
-          userId: actor.sub,
-          action: 'lar.updated',
-          entityType: 'lar',
-          entityId: actor.lar_id,
-          before: before as unknown as Prisma.InputJsonValue,
-          after: data as Prisma.InputJsonValue,
-        },
+      this.audit.op({
+        larId: actor.lar_id,
+        userId: actor.sub,
+        action: 'lar.updated',
+        entityType: 'lar',
+        entityId: actor.lar_id,
+        before,
+        after: data,
       }),
     ]);
     return updated;

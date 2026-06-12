@@ -1,6 +1,8 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { AuditModule } from './common/audit/audit.module';
+import { auditContextMiddleware } from './common/audit/audit-context';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { validateEnv } from './config/env';
@@ -25,6 +27,7 @@ import { RedisModule } from './redis/redis.module';
     }),
     PrismaModule,
     RedisModule,
+    AuditModule,
     HealthModule,
     AuthModule,
     LaresModule,
@@ -42,4 +45,9 @@ import { RedisModule } from './redis/redis.module';
     { provide: APP_GUARD, useClass: PermissionsGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // Contexto de audit (IP + user agent) disponível em toda a request via ALS.
+    consumer.apply(auditContextMiddleware).forRoutes('{*splat}');
+  }
+}
