@@ -1,0 +1,34 @@
+# build
+dist/
+*.tsbuildinfo
+
+# deps
+node_modules/
+
+# env & secrets — never commit (CLAUDE.md hard rule)
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.jks
+*.p8
+
+# coverage / test artifacts
+coverage/
+.nyc_output/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# local tooling
+.claude/tmp/
+.claude/settings.local.json

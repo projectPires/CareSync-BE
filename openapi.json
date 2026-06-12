@@ -1,0 +1,41 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "operationId": "HealthController_check_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "All dependencies up"
+          },
+          "503": {
+            "description": "One or more dependencies down"
+          }
+        },
+        "summary": "Liveness + dependency checks (Postgres, Redis)",
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "CareSync API",
+    "description": "Backend for CareSync — clinical management of Portuguese ERPI. Multi-tenant (RLS by lar_id), offline-first sync, append-only clinical data.",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {}
+  }
+}
