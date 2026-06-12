@@ -18,7 +18,7 @@ export class LoginDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'demo-admin-123' })
   @IsString()
   @MinLength(8)
   password: string;
@@ -53,7 +53,10 @@ export class SetPinDto {
 }
 
 export class RefreshDto {
-  @ApiProperty({ description: 'Refresh token opaco recebido no login' })
+  @ApiProperty({
+    description: 'Refresh token opaco recebido no login (formato "<id>.<segredo>")',
+    example: '8df11de1-a3aa-4aa9-b423-8038729b0153.kQ3xJ9mP2vL8nR5tW7yB4cF6hD1gS0aZ',
+  })
   @IsString()
   @Length(20, 200)
   refresh_token: string;
@@ -86,12 +89,15 @@ export class InviteDto {
 }
 
 export class AcceptInviteDto {
-  @ApiProperty({ description: 'Token do email de convite' })
+  @ApiProperty({
+    description: 'Token do email de convite (formato "<id>.<segredo>")',
+    example: '3f2a1b00-9c8d-4e7f-a6b5-c4d3e2f1a0b9.mN8xK2pQ7vR4tY6wB3cZ',
+  })
   @IsString()
   @Length(20, 200)
   token: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: 'a-minha-password-segura' })
   @IsString()
   @MinLength(8)
   password: string;

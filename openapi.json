@@ -307,7 +307,8 @@
             "example": "helena@larbemestar.pt"
           },
           "password": {
-            "type": "string"
+            "type": "string",
+            "example": "demo-admin-123"
           },
           "lar_id": {
             "type": "string",
@@ -386,7 +387,8 @@
         "properties": {
           "refresh_token": {
             "type": "string",
-            "description": "Refresh token opaco recebido no login"
+            "description": "Refresh token opaco recebido no login (formato \"<id>.<segredo>\")",
+            "example": "8df11de1-a3aa-4aa9-b423-8038729b0153.kQ3xJ9mP2vL8nR5tW7yB4cF6hD1gS0aZ"
           }
         },
         "required": [
@@ -434,10 +436,12 @@
         "properties": {
           "token": {
             "type": "string",
-            "description": "Token do email de convite"
+            "description": "Token do email de convite (formato \"<id>.<segredo>\")",
+            "example": "3f2a1b00-9c8d-4e7f-a6b5-c4d3e2f1a0b9.mN8xK2pQ7vR4tY6wB3cZ"
           },
           "password": {
-            "type": "string"
+            "type": "string",
+            "example": "a-minha-password-segura"
           }
         },
         "required": [
