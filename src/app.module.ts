@@ -8,6 +8,7 @@ import { ClinicalModule } from './modules/clinical/clinical.module';
 import { HealthModule } from './modules/health/health.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { PdfModule } from './modules/pdf/pdf.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { PdfModule } from './modules/pdf/pdf.module';
       isGlobal: true,
       validate: validateEnv,
     }),
+    PrismaModule,
     HealthModule,
     AuthModule,
     ClinicalModule,
