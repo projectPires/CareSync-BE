@@ -38,7 +38,7 @@ Invariantes centrais do código:
 
 ## Começar
 
-> O scaffold chegou com a [issue #1](https://github.com/projectPires/CareSync-BE/issues/1) (Sprint 0).
+> **Novo no Docker/Prisma?** Lê primeiro o [Guia de desenvolvimento local](docs/GUIA-DEV-LOCAL.md) — explica os conceitos, os comandos do dia-a-dia e os problemas comuns.
 
 ```bash
 docker compose up -d        # Postgres 16 + Redis 7 + MinIO
