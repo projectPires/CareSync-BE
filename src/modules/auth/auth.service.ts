@@ -10,6 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
+import { AuditService } from '../../common/audit/audit.service';
 import { JwtPayload } from '../../common/auth/jwt-payload';
 import { PrismaService } from '../../prisma/prisma.service';
 import { forTenant } from '../../prisma/tenant';
@@ -44,6 +45,7 @@ export class AuthService {
     private readonly tokens: TokenService,
     private readonly lockout: LockoutService,
     private readonly jwt: JwtService,
+    private readonly auditService: AuditService,
     config: ConfigService,
   ) {
     this.isDev = config.get('NODE_ENV') !== 'production';
@@ -278,17 +280,13 @@ export class AuthService {
     return this.isDev ? { accept_url: `caresync://invite/accept?token=${token}` } : {};
   }
 
-  // ── audit helper (interceptor global chega no #5) ──────────────────────────
-
-  private async audit(
+  private audit(
     larId: string,
     userId: string,
     action: string,
     entityType: string,
     entityId: string,
   ): Promise<void> {
-    await forTenant(this.prisma, larId).auditLog.create({
-      data: { larId, userId, action, entityType, entityId },
-    });
+    return this.auditService.log({ larId, userId, action, entityType, entityId });
   }
 }
