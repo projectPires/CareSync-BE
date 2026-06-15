@@ -34,10 +34,12 @@ export const PERMISSIONS = {
   'resident.archive': ['admin'],
   'resident.photo': ['admin'], // 🔒 delegável a nurse/aide
 
-  // eMAR (usadas a partir do #6)
+  // eMAR (#6)
   'emar.plan': ['admin', 'doctor'],
   'emar.administer': ['admin', 'nurse', 'doctor'], // 🔒 delegável a aide qualificado
   'emar.refuse': ['admin', 'nurse', 'aide', 'doctor'],
+  'emar.read': ['admin', 'nurse', 'aide', 'doctor'], // aide: só hoje (cap em emar.read_history)
+  'emar.read_history': ['admin', 'nurse', 'doctor'], // histórico além de hoje
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

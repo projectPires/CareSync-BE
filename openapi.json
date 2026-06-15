@@ -777,6 +777,351 @@
           "residents"
         ]
       }
+    },
+    "/api/residents/{residentId}/medications": {
+      "post": {
+        "operationId": "MedicationsController_create",
+        "parameters": [
+          {
+            "name": "residentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMedicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": "Residente fora do âmbito"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Criar plano de medicação (admin/médico)",
+        "tags": [
+          "emar"
+        ]
+      },
+      "get": {
+        "operationId": "MedicationsController_list",
+        "parameters": [
+          {
+            "name": "residentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Listar planos de medicação do residente",
+        "tags": [
+          "emar"
+        ]
+      }
+    },
+    "/api/residents/{residentId}/medications/{id}": {
+      "get": {
+        "operationId": "MedicationsController_get",
+        "parameters": [
+          {
+            "name": "residentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Detalhe de um plano",
+        "tags": [
+          "emar"
+        ]
+      },
+      "patch": {
+        "operationId": "MedicationsController_update",
+        "parameters": [
+          {
+            "name": "residentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMedicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Editar plano (admin/médico) — auditado before/after",
+        "tags": [
+          "emar"
+        ]
+      },
+      "delete": {
+        "operationId": "MedicationsController_discontinue",
+        "parameters": [
+          {
+            "name": "residentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscontinueMedicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Descontinuar plano (soft — define end_date; sem DELETE físico)",
+        "tags": [
+          "emar"
+        ]
+      }
+    },
+    "/api/administrations": {
+      "get": {
+        "operationId": "AdministrationsController_list",
+        "parameters": [
+          {
+            "name": "resident_id",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "description": "YYYY-MM-DD (default hoje)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Administrações de um residente num dia (estado atual por toma). Auxiliar: só hoje.",
+        "tags": [
+          "emar"
+        ]
+      }
+    },
+    "/api/administrations/{id}/confirm": {
+      "post": {
+        "operationId": "AdministrationsController_confirm",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmAdministrationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "Já confirmada — { confirmed_by, confirmed_at }"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirmar administração → taken. Auxiliar requer emar.administer delegado (🔒).",
+        "tags": [
+          "emar"
+        ]
+      }
+    },
+    "/api/administrations/{id}/refuse": {
+      "post": {
+        "operationId": "AdministrationsController_refuse",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefuseAdministrationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "403": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "Transição inválida"
+          },
+          "422": {
+            "description": "reason em falta/vazio"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Registar recusa → refused. reason obrigatório (422 se vazio).",
+        "tags": [
+          "emar"
+        ]
+      }
     }
   },
   "info": {
@@ -1223,6 +1568,183 @@
               "transfer",
               "other"
             ]
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "MedicationScheduleDto": {
+        "type": "object",
+        "properties": {
+          "times": {
+            "example": [
+              "08:00",
+              "20:00"
+            ],
+            "description": "Horas HH:MM (24h), fuso do Lar. Vazio = SOS/PRN (sem materialização).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "daysOfWeek": {
+            "example": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "description": "Dias da semana ISO 1=Seg..7=Dom. Omitido = todos os dias.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "CreateMedicationDto": {
+        "type": "object",
+        "properties": {
+          "drug": {
+            "type": "string",
+            "example": "Lisinopril"
+          },
+          "dci": {
+            "type": "string",
+            "description": "Denominação Comum Internacional",
+            "example": "lisinopril"
+          },
+          "dose": {
+            "type": "string",
+            "example": "10 mg"
+          },
+          "form": {
+            "type": "string",
+            "enum": [
+              "comp",
+              "cap",
+              "drop",
+              "patch",
+              "inj",
+              "suspension"
+            ]
+          },
+          "route": {
+            "type": "string",
+            "enum": [
+              "oral",
+              "sublingual",
+              "im",
+              "sc",
+              "iv",
+              "topical"
+            ]
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/MedicationScheduleDto"
+          },
+          "condition": {
+            "type": "string",
+            "example": "Em jejum"
+          },
+          "prescribed_by": {
+            "type": "string",
+            "description": "Médico prescritor (default: utilizador atual)"
+          },
+          "start_date": {
+            "type": "string",
+            "example": "2026-06-15"
+          },
+          "end_date": {
+            "type": "string",
+            "example": "2026-12-31",
+            "description": "Omitido = crónico"
+          }
+        },
+        "required": [
+          "drug",
+          "dose",
+          "form",
+          "route",
+          "schedule",
+          "start_date"
+        ]
+      },
+      "UpdateMedicationDto": {
+        "type": "object",
+        "properties": {
+          "drug": {
+            "type": "string"
+          },
+          "dci": {
+            "type": "string"
+          },
+          "dose": {
+            "type": "string"
+          },
+          "form": {
+            "type": "string",
+            "enum": [
+              "comp",
+              "cap",
+              "drop",
+              "patch",
+              "inj",
+              "suspension"
+            ]
+          },
+          "route": {
+            "type": "string",
+            "enum": [
+              "oral",
+              "sublingual",
+              "im",
+              "sc",
+              "iv",
+              "topical"
+            ]
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/MedicationScheduleDto"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string"
+          }
+        }
+      },
+      "DiscontinueMedicationDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Motivo da descontinuação (audit)"
+          }
+        }
+      },
+      "ConfirmAdministrationDto": {
+        "type": "object",
+        "properties": {
+          "notes": {
+            "type": "string",
+            "description": "Nota opcional da administração"
+          }
+        }
+      },
+      "RefuseAdministrationDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Motivo da recusa — obrigatório (validado no serviço → 422 se vazio)",
+            "example": "Residente recusou"
+          },
+          "notes": {
+            "type": "string"
           }
         },
         "required": [
