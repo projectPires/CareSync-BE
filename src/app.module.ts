@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuditModule } from './common/audit/audit.module';
 import { auditContextMiddleware } from './common/audit/audit-context';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -25,6 +26,7 @@ import { RedisModule } from './redis/redis.module';
       isGlobal: true,
       validate: validateEnv,
     }),
+    EventEmitterModule.forRoot(),
     PrismaModule,
     RedisModule,
     AuditModule,
