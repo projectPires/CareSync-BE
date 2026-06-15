@@ -40,12 +40,22 @@ export const PERMISSIONS = {
   'emar.refuse': ['admin', 'nurse', 'aide', 'doctor'],
   'emar.read': ['admin', 'nurse', 'aide', 'doctor'], // aide: só hoje (cap em emar.read_history)
   'emar.read_history': ['admin', 'nurse', 'doctor'], // histórico além de hoje
+
+  // Sinais vitais (#8)
+  'vitals.record_basic': ['admin', 'nurse', 'aide', 'doctor'], // TA / FC / Temp
+  'vitals.record_advanced': ['admin', 'nurse', 'doctor'], // 🔒 SpO₂/Glicemia/Dor — delegável a aide
+  'vitals.read': ['admin', 'nurse', 'aide', 'doctor'], // aide: 24h (cap em vitals.read_history)
+  'vitals.read_history': ['admin', 'nurse', 'doctor'], // histórico além de 24h
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;
 
 /** Permissões 🔒 que o Admin pode delegar individualmente (whitelist do #18). */
-export const DELEGATABLE: readonly Permission[] = ['resident.photo', 'emar.administer'] as const;
+export const DELEGATABLE: readonly Permission[] = [
+  'resident.photo',
+  'emar.administer',
+  'vitals.record_advanced',
+] as const;
 
 export function can(user: Pick<JwtPayload, 'role' | 'perms'>, permission: Permission): boolean {
   const roles = PERMISSIONS[permission] as readonly Role[] | undefined;

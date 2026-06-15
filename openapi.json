@@ -1122,6 +1122,115 @@
           "emar"
         ]
       }
+    },
+    "/api/residents/{residentId}/vitals": {
+      "post": {
+        "operationId": "VitalsController_create",
+        "parameters": [
+          {
+            "name": "residentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVitalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          },
+          "403": {
+            "description": "Métrica avançada sem permissão delegada"
+          },
+          "404": {
+            "description": "Residente fora do âmbito"
+          },
+          "422": {
+            "description": "Valor inválido para a métrica / correção sem reason"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Registar sinal vital. SpO₂/Glicemia/Dor exigem vitals.record_advanced (🔒 delegável a aide). abnormal calculado no servidor.",
+        "tags": [
+          "vitals"
+        ]
+      },
+      "get": {
+        "operationId": "VitalsController_history",
+        "parameters": [
+          {
+            "name": "residentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metric",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "bp",
+                "hr",
+                "spo2",
+                "temp",
+                "glucose",
+                "pain"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "ISO 8601 (default: -7 dias)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "ISO 8601 (default: agora)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Histórico de sinais vitais (estado atual). Auxiliar limitado a 24h (server-side).",
+        "tags": [
+          "vitals"
+        ]
+      }
     }
   },
   "info": {
@@ -1749,6 +1858,53 @@
         },
         "required": [
           "reason"
+        ]
+      },
+      "CreateVitalDto": {
+        "type": "object",
+        "properties": {
+          "metric": {
+            "type": "string",
+            "enum": [
+              "bp",
+              "hr",
+              "spo2",
+              "temp",
+              "glucose",
+              "pain"
+            ]
+          },
+          "value": {
+            "type": "object",
+            "description": "Valor por métrica: bp = {sys,dia}; restantes = {value}. Validado por métrica.",
+            "example": {
+              "sys": 128,
+              "dia": 82
+            }
+          },
+          "recorded_at": {
+            "type": "string",
+            "description": "Instante da medição (default: agora)"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string",
+            "description": "UUID gerado no dispositivo — idempotência do sync offline"
+          },
+          "supersedes_id": {
+            "type": "string",
+            "description": "Correção: id da leitura a substituir (append-only)"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Motivo da correção — obrigatório se supersedes_id (422 se vazio)"
+          }
+        },
+        "required": [
+          "metric",
+          "value"
         ]
       }
     }

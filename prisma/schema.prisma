@@ -431,6 +431,9 @@ model VitalReading {
   resident Resident @relation(fields: [residentId], references: [id])
 
   @@index([larId, residentId, recordedAt])
+  // Vitals history filtered by metric (#8) — matches the raw index in the
+  // 20260615010000_vitals_append_only migration (kept in sync to avoid drift).
+  @@index([larId, residentId, metric, recordedAt(sort: Desc)], map: "vital_reading_lar_id_resident_id_metric_idx")
   @@map("vital_reading")
 }
 
