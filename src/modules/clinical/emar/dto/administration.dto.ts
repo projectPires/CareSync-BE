@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, Length, MaxLength } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsDateString, IsOptional, IsString, IsUUID, Length, MaxLength } from 'class-validator';
 
 /** Confirmar administração → taken. */
 export class ConfirmAdministrationDto {
@@ -8,6 +8,20 @@ export class ConfirmAdministrationDto {
   @IsString()
   @Length(1, 500)
   notes?: string;
+
+  @ApiPropertyOptional({
+    description: 'UUID gerado no dispositivo — idempotência do sync offline (replay = no-op)',
+  })
+  @IsOptional()
+  @IsUUID()
+  client_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Instante real da administração (offline pode ser anterior; default: agora)',
+  })
+  @IsOptional()
+  @IsDateString()
+  administered_at?: string;
 }
 
 /**
@@ -16,9 +30,9 @@ export class ConfirmAdministrationDto {
  * não pelo ValidationPipe (que devolveria 400) — o contrato pede 422.
  */
 export class RefuseAdministrationDto {
-  @ApiProperty({
-    description: 'Motivo da recusa — obrigatório (validado no serviço → 422 se vazio)',
-    required: true,
+  // @IsOptional no pipe (devolveria 400); a não-vazidade é validada no serviço → 422.
+  @ApiPropertyOptional({
+    description: 'Motivo da recusa — obrigatório de facto (vazio/ausente → 422 no serviço)',
     example: 'Residente recusou',
   })
   @IsOptional()
@@ -31,4 +45,9 @@ export class RefuseAdministrationDto {
   @IsString()
   @Length(1, 500)
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'UUID gerado no dispositivo — idempotência do sync offline' })
+  @IsOptional()
+  @IsUUID()
+  client_id?: string;
 }

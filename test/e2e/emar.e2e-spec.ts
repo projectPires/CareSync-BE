@@ -166,9 +166,10 @@ const http = () => request(app?.getHttpServer());
 const as = (who: string) => ({ Authorization: `Bearer ${tokens[who]}` });
 
 let slotCounter = 0;
-/** Insert a fresh pending administration directly (each on its own slot). */
+/** Insert a fresh pending administration directly (each on its own slot, today). */
 async function makePending(): Promise<string> {
-  const scheduledAt = new Date(Date.UTC(2026, 5, 15, 0, slotCounter++, 0));
+  // Anchor to "today" (server clock) so the daily eMAR window includes it.
+  const scheduledAt = new Date(Date.now() - slotCounter++ * 60_000);
   const row = await forTenant(prisma, larA).medicationAdministration.create({
     data: {
       larId: larA,
@@ -243,8 +244,8 @@ describe('eMAR (e2e)', () => {
       .set(as('admin'))
       .send({});
     expect(second.status).toBe(409);
-    expect(second.body.confirmed_by).toBe(ids.nurse);
-    expect(second.body.confirmed_at).toBeTruthy();
+    expect(second.body.details.confirmed_by).toBe(ids.nurse);
+    expect(second.body.details.confirmed_at).toBeTruthy();
   });
 
   it('confirmação concorrente da mesma toma: exatamente um 201 e um 409', async () => {
@@ -335,9 +336,8 @@ describe('eMAR (e2e)', () => {
     if (!dbUp) return;
     const id = await makePending();
     await http().post(`/api/administrations/${id}/confirm`).set(as('nurse')).send({});
-    const list = await http()
-      .get(`/api/administrations?resident_id=${residentA}&date=2026-06-15`)
-      .set(as('nurse'));
+    // Sem date → dia de hoje (onde makePending ancora as tomas).
+    const list = await http().get(`/api/administrations?resident_id=${residentA}`).set(as('nurse'));
     expect(list.status).toBe(200);
     expect(Array.isArray(list.body)).toBe(true);
     expect(list.body.length).toBeGreaterThan(0);

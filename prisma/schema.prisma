@@ -406,7 +406,10 @@ model MedicationAdministration {
   status         AdministrationStatus @default(pending)
   reason         String?
   notes          String?
-  clientId       String?              @unique @map("client_id") @db.Uuid
+  // Offline-sync idempotency key — UNIQUE scoped per tenant via a partial index
+  // (lar_id, client_id) WHERE client_id IS NOT NULL (sync migration), NOT a global
+  // @unique. Multiple NULLs allowed (online HTTP writes carry no client_id).
+  clientId       String?              @map("client_id") @db.Uuid
   supersedesId   String?              @map("supersedes_id") @db.Uuid
   createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz()
 
@@ -430,7 +433,8 @@ model VitalReading {
   recordedBy   String      @map("recorded_by") @db.Uuid
   abnormal     Boolean     @default(false)
   notes        String?
-  clientId     String?     @unique @map("client_id") @db.Uuid
+  // Offline-sync idempotency — tenant-scoped via partial index (sync migration).
+  clientId     String?     @map("client_id") @db.Uuid
   supersedesId String?     @map("supersedes_id") @db.Uuid
   reason       String?
   createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz()

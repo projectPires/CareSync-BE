@@ -33,10 +33,11 @@ export function isValidAdministrationTransition(
  */
 export function assertValidTransition(from: AdministrationStatus, to: AdministrationStatus): void {
   if (!isValidAdministrationTransition(from, to)) {
+    // Structured data under `details` so AllExceptionsFilter preserves it
+    // (the uniform envelope drops unknown top-level fields).
     throw new ConflictException({
       message: `Transição inválida: ${from} → ${to}`,
-      currentStatus: from,
-      requestedStatus: to,
+      details: { currentStatus: from, requestedStatus: to },
     });
   }
 }
