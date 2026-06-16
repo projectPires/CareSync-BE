@@ -1,5 +1,16 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtPayload } from '../../../common/auth/jwt-payload';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { Require } from '../../../common/decorators/require.decorator';
@@ -33,9 +44,27 @@ export class MedicationsController {
   @Get()
   @Require('emar.read')
   @ApiOperation({ summary: 'Listar planos de medicação do residente' })
+  @ApiQuery({
+    name: 'updated_since',
+    required: false,
+    type: String,
+    format: 'date-time',
+    description: 'ISO 8601 — delta fetch: só planos alterados desde o cursor',
+  })
   @ApiResponse({ status: 200 })
-  list(@CurrentUser() user: JwtPayload, @Param('residentId', ParseUUIDPipe) residentId: string) {
-    return this.emar.listPlans(user, residentId);
+  list(
+    @CurrentUser() user: JwtPayload,
+    @Param('residentId', ParseUUIDPipe) residentId: string,
+    @Query('updated_since') updatedSince?: string,
+  ) {
+    let since: Date | undefined;
+    if (updatedSince !== undefined) {
+      since = new Date(updatedSince);
+      if (Number.isNaN(since.getTime())) {
+        throw new BadRequestException('updated_since deve ser uma data ISO 8601 válida');
+      }
+    }
+    return this.emar.listPlans(user, residentId, since);
   }
 
   @Get(':id')

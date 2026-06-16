@@ -100,10 +100,14 @@ export class EmarService {
     return toMedicationResponse(created);
   }
 
-  async listPlans(actor: JwtPayload, residentId: string) {
+  async listPlans(actor: JwtPayload, residentId: string, updatedSince?: Date) {
     await this.assertResidentInScope(actor, residentId);
     const rows = await forTenant(this.prisma, actor.lar_id).medication.findMany({
-      where: { residentId },
+      where: {
+        residentId,
+        // Delta fetch (#9): só planos alterados desde o cursor do cliente.
+        ...(updatedSince && { updatedAt: { gte: updatedSince } }),
+      },
       orderBy: { createdAt: 'desc' },
     });
     return rows.map(toMedicationResponse);

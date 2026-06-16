@@ -33,6 +33,7 @@ export function toResidentResponse(r: Resident) {
     dnr: r.dnr,
     dnr_document_url: r.dnrDocumentUrl,
     created_at: r.createdAt,
+    updated_at: r.updatedAt, // cursor para o delta fetch (updated_since, #9)
   };
 }
 

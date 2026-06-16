@@ -18,6 +18,7 @@ interface ListFilters {
   floor?: number;
   status?: Resident['status'];
   include_archived?: boolean;
+  updated_since?: Date;
 }
 
 @Injectable()
@@ -54,6 +55,8 @@ export class ResidentsService {
         ...(filters.floor !== undefined && { floor: filters.floor }),
         ...(filters.status && { status: filters.status }),
         ...(includeArchived ? {} : { archivedAt: null }),
+        // Delta fetch (#9): só residentes alterados desde o cursor do cliente.
+        ...(filters.updated_since && { updatedAt: { gte: filters.updated_since } }),
       },
       orderBy: [{ floor: 'asc' }, { room: 'asc' }],
     });
