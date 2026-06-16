@@ -1251,6 +1251,39 @@
           "vitals"
         ]
       }
+    },
+    "/api/sync/batch": {
+      "post": {
+        "operationId": "SyncController_batch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncBatchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Estado por item: applied / duplicate / conflict / error"
+          },
+          "400": {
+            "description": "Payload inválido (mutations vazio/malformado)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ingestão da fila de mutações offline. Idempotente (replay = no-op), isolamento por item, autorização por item. Isento do rate limit por-utilizador.",
+        "tags": [
+          "sync"
+        ]
+      }
     }
   },
   "info": {
@@ -1861,6 +1894,14 @@
           "notes": {
             "type": "string",
             "description": "Nota opcional da administração"
+          },
+          "client_id": {
+            "type": "string",
+            "description": "UUID gerado no dispositivo — idempotência do sync offline (replay = no-op)"
+          },
+          "administered_at": {
+            "type": "string",
+            "description": "Instante real da administração (offline pode ser anterior; default: agora)"
           }
         }
       },
@@ -1869,16 +1910,17 @@
         "properties": {
           "reason": {
             "type": "string",
-            "description": "Motivo da recusa — obrigatório (validado no serviço → 422 se vazio)",
+            "description": "Motivo da recusa — obrigatório de facto (vazio/ausente → 422 no serviço)",
             "example": "Residente recusou"
           },
           "notes": {
             "type": "string"
+          },
+          "client_id": {
+            "type": "string",
+            "description": "UUID gerado no dispositivo — idempotência do sync offline"
           }
-        },
-        "required": [
-          "reason"
-        ]
+        }
       },
       "CreateVitalDto": {
         "type": "object",
@@ -1925,6 +1967,47 @@
         "required": [
           "metric",
           "value"
+        ]
+      },
+      "SyncMutationDto": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "description": "UUID gerado no dispositivo — chave de idempotência (dedup do replay)"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "vital.create",
+              "administration.confirm",
+              "administration.refuse"
+            ]
+          },
+          "payload": {
+            "type": "object",
+            "description": "Payload por tipo: vital.create={resident_id,metric,value,recorded_at?}; administration.confirm={administration_id,administered_at?,notes?}; administration.refuse={administration_id,reason,notes?}. Validado no serviço-alvo."
+          }
+        },
+        "required": [
+          "client_id",
+          "type",
+          "payload"
+        ]
+      },
+      "SyncBatchDto": {
+        "type": "object",
+        "properties": {
+          "mutations": {
+            "description": "Mutações ordenadas (processadas em ordem)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyncMutationDto"
+            }
+          }
+        },
+        "required": [
+          "mutations"
         ]
       }
     }

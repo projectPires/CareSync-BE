@@ -16,6 +16,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
 import { LaresModule } from './modules/lares/lares.module';
 import { PdfModule } from './modules/pdf/pdf.module';
 import { ResidentsModule } from './modules/residents/residents.module';
+import { SyncModule } from './modules/sync/sync.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
@@ -36,6 +37,7 @@ import { RedisModule } from './redis/redis.module';
     UsersModule,
     ResidentsModule,
     ClinicalModule,
+    SyncModule,
     AlertsModule,
     BillingModule,
     PdfModule,

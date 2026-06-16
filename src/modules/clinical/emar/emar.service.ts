@@ -206,10 +206,10 @@ export class EmarService {
 
   private alreadyConfirmed(taken: MedicationAdministration): ConflictException {
     // "já confirmada por X" — the mobile modal payload (clinical hard rule 2).
+    // Under `details` so AllExceptionsFilter preserves it in the response body.
     return new ConflictException({
       message: 'Administração já confirmada',
-      confirmed_by: taken.administeredBy,
-      confirmed_at: taken.administeredAt,
+      details: { confirmed_by: taken.administeredBy, confirmed_at: taken.administeredAt },
     });
   }
 
@@ -225,9 +225,11 @@ export class EmarService {
       scheduledAt: target.scheduledAt,
       status: 'taken',
       administeredBy: actor.sub,
-      administeredAt: new Date(),
+      // Offline: real administration time may precede sync (server createdAt still orders).
+      administeredAt: dto.administered_at ? new Date(dto.administered_at) : new Date(),
       supersedesId: current.id,
       notes: dto.notes ?? null,
+      clientId: dto.client_id ?? null,
     };
     try {
       const [created] = (await tenantBatch(this.prisma, actor.lar_id, [
@@ -243,8 +245,15 @@ export class EmarService {
       ])) as [MedicationAdministration, unknown];
       return toAdministrationResponse(created);
     } catch (e) {
-      // Concurrent confirm race lost the taken_once index → surface "já confirmada".
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        // Sync replay (same client_id) → idempotent no-op: return the existing row.
+        if (dto.client_id) {
+          const dup = await forTenant(this.prisma, actor.lar_id).medicationAdministration.findFirst(
+            { where: { larId: actor.lar_id, clientId: dto.client_id } },
+          );
+          if (dup) return toAdministrationResponse(dup);
+        }
+        // Otherwise a different action lost the taken_once race → "já confirmada".
         const taken = await forTenant(this.prisma, actor.lar_id).medicationAdministration.findFirst(
           {
             where: {
@@ -278,19 +287,35 @@ export class EmarService {
       reason,
       supersedesId: current.id,
       notes: dto.notes ?? null,
+      clientId: dto.client_id ?? null,
     };
-    const [created] = (await tenantBatch(this.prisma, actor.lar_id, [
-      this.prisma.medicationAdministration.create({ data }),
-      this.audit.op({
-        larId: actor.lar_id,
-        userId: actor.sub,
-        action: 'medication.refused',
-        entityType: 'medication_administration',
-        entityId: target.medicationId,
-        after: { status: 'refused', scheduledAt: target.scheduledAt, supersedesId: current.id },
-      }),
-    ])) as [MedicationAdministration, unknown];
-    return toAdministrationResponse(created);
+    try {
+      const [created] = (await tenantBatch(this.prisma, actor.lar_id, [
+        this.prisma.medicationAdministration.create({ data }),
+        this.audit.op({
+          larId: actor.lar_id,
+          userId: actor.sub,
+          action: 'medication.refused',
+          entityType: 'medication_administration',
+          entityId: target.medicationId,
+          after: { status: 'refused', scheduledAt: target.scheduledAt, supersedesId: current.id },
+        }),
+      ])) as [MedicationAdministration, unknown];
+      return toAdministrationResponse(created);
+    } catch (e) {
+      // Sync replay (same client_id) → idempotent no-op.
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002' &&
+        dto.client_id
+      ) {
+        const dup = await forTenant(this.prisma, actor.lar_id).medicationAdministration.findFirst({
+          where: { larId: actor.lar_id, clientId: dto.client_id },
+        });
+        if (dup) return toAdministrationResponse(dup);
+      }
+      throw e;
+    }
   }
 
   /** eMAR list — current state per slot in a window. Aide capped to today. */

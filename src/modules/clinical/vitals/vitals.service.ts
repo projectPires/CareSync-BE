@@ -126,8 +126,9 @@ export class VitalsService {
         e.code === 'P2002' &&
         dto.client_id
       ) {
-        const existing = await forTenant(this.prisma, actor.lar_id).vitalReading.findUnique({
-          where: { clientId: dto.client_id },
+        // client_id is unique per (lar_id, client_id) — scope the lookup to the tenant.
+        const existing = await forTenant(this.prisma, actor.lar_id).vitalReading.findFirst({
+          where: { larId: actor.lar_id, clientId: dto.client_id },
         });
         if (existing) return toVitalResponse(existing);
       }
