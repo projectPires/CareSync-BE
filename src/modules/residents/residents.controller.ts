@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtPayload } from '../../common/auth/jwt-payload';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -28,17 +38,33 @@ export class ResidentsController {
     enum: ['estavel', 'atencao', 'critico', 'recuperacao'],
   })
   @ApiQuery({ name: 'include_archived', required: false, type: Boolean, description: 'Só admin' })
+  @ApiQuery({
+    name: 'updated_since',
+    required: false,
+    type: String,
+    format: 'date-time',
+    description: 'ISO 8601 — delta fetch: só residentes alterados desde o cursor (offline cache)',
+  })
   @ApiResponse({ status: 200 })
   list(
     @CurrentUser() user: JwtPayload,
     @Query('floor') floor?: string,
     @Query('status') status?: 'estavel' | 'atencao' | 'critico' | 'recuperacao',
     @Query('include_archived') includeArchived?: string,
+    @Query('updated_since') updatedSince?: string,
   ) {
+    let updated_since: Date | undefined;
+    if (updatedSince !== undefined) {
+      updated_since = new Date(updatedSince);
+      if (Number.isNaN(updated_since.getTime())) {
+        throw new BadRequestException('updated_since deve ser uma data ISO 8601 válida');
+      }
+    }
     return this.residents.list(user, {
       floor: floor !== undefined ? Number(floor) : undefined,
       status,
       include_archived: includeArchived === 'true',
+      updated_since,
     });
   }
 

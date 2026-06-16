@@ -525,6 +525,16 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "name": "updated_since",
+            "required": false,
+            "in": "query",
+            "description": "ISO 8601 — delta fetch: só residentes alterados desde o cursor (offline cache)",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -830,6 +840,16 @@
             "required": true,
             "in": "path",
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "updated_since",
+            "required": false,
+            "in": "query",
+            "description": "ISO 8601 — delta fetch: só planos alterados desde o cursor",
+            "schema": {
+              "format": "date-time",
               "type": "string"
             }
           }

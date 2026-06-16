@@ -286,6 +286,9 @@ model Resident {
   dnr               Boolean        @default(false)
   dnrDocumentUrl    String?        @map("dnr_document_url")
   createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz()
+  // Mutable entity — updated_at drives the Worker App delta fetch (updated_since, #9).
+  // Maintained by Prisma @updatedAt + a DB trigger (belt-and-braces vs raw SQL).
+  updatedAt         DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   lar             Lar                        @relation(fields: [larId], references: [id])
   medications     Medication[]
@@ -300,6 +303,7 @@ model Resident {
 
   @@unique([larId, snsNumber])
   @@index([larId, floor])
+  @@index([larId, updatedAt])
   @@map("resident")
 }
 
@@ -377,11 +381,14 @@ model Medication {
   startDate    DateTime        @map("start_date") @db.Date
   endDate      DateTime?       @map("end_date") @db.Date
   createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz()
+  // Plan is mutable (admin/médico edita) — updated_at drives the delta fetch (#9).
+  updatedAt    DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
   resident        Resident                   @relation(fields: [residentId], references: [id])
   administrations MedicationAdministration[]
 
   @@index([larId, residentId])
+  @@index([larId, updatedAt])
   @@map("medication")
 }
 

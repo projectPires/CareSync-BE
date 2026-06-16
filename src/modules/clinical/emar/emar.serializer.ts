@@ -17,6 +17,7 @@ export function toMedicationResponse(m: Medication) {
     start_date: m.startDate,
     end_date: m.endDate,
     created_at: m.createdAt,
+    updated_at: m.updatedAt, // cursor para o delta fetch (updated_since, #9)
   };
 }
 
