@@ -10,7 +10,7 @@ const DEV_DEFAULTS = {
   S3_ENDPOINT: 'http://localhost:9000',
   S3_ACCESS_KEY: 'minioadmin',
   S3_SECRET_KEY: 'minioadmin',
-  JWT_SECRET: 'dev-only-jwt-secret-change-me',
+  JWT_SECRET: 'dev-only-jwt-secret-change-me-please-32+',
 } as const;
 
 export const envSchema = z
@@ -24,7 +24,8 @@ export const envSchema = z
     S3_SECRET_KEY: z.string().min(1).default(DEV_DEFAULTS.S3_SECRET_KEY),
     S3_BUCKET: z.string().min(1).default('caresync'),
     S3_REGION: z.string().min(1).default('eu-central-1'),
-    JWT_SECRET: z.string().min(16).default(DEV_DEFAULTS.JWT_SECRET),
+    // HS256 wants a key >= the 256-bit HMAC output (RFC 7518 §3.2): min 32 bytes.
+    JWT_SECRET: z.string().min(32).default(DEV_DEFAULTS.JWT_SECRET),
     JWT_ACCESS_TTL_SEC: z.coerce.number().int().positive().default(900), // 15 min
     JWT_REFRESH_TTL_DAYS: z.coerce.number().int().positive().default(30),
   })

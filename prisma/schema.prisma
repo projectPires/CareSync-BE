@@ -459,7 +459,7 @@ model LogEntry {
   notes        String?
   authorId     String      @map("author_id") @db.Uuid
   flagged      Boolean     @default(false)
-  clientId     String?     @unique @map("client_id") @db.Uuid
+  clientId     String?     @map("client_id") @db.Uuid
   supersedesId String?     @map("supersedes_id") @db.Uuid
   reason       String?
   createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz()
@@ -516,7 +516,7 @@ model EliminationRecord {
   characteristics Json?
   recordedBy      String   @map("recorded_by") @db.Uuid
   recordedAt      DateTime @map("recorded_at") @db.Timestamptz()
-  clientId        String?  @unique @map("client_id") @db.Uuid
+  clientId        String?  @map("client_id") @db.Uuid
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   resident Resident @relation(fields: [residentId], references: [id])
@@ -534,7 +534,7 @@ model ActivityRecord {
   mood       String?
   recordedBy String   @map("recorded_by") @db.Uuid
   recordedAt DateTime @map("recorded_at") @db.Timestamptz()
-  clientId   String?  @unique @map("client_id") @db.Uuid
+  clientId   String?  @map("client_id") @db.Uuid
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   resident Resident @relation(fields: [residentId], references: [id])
