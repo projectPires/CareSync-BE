@@ -19,6 +19,7 @@ import { EmarService } from '../clinical/emar/emar.service';
 import { CreateVitalDto } from '../clinical/vitals/dto/vital.dto';
 import { VitalsService } from '../clinical/vitals/vitals.service';
 import { SyncMutationDto, SyncMutationType } from './dto/sync.dto';
+import { toValidatedInstance } from './validate-payload';
 
 type ItemStatus = 'applied' | 'duplicate' | 'conflict' | 'error';
 
@@ -70,11 +71,12 @@ export class SyncService {
     if (!can(actor, REQUIRED_PERMISSION[m.type])) {
       return { ...base, status: 'error', error: { code: 'FORBIDDEN' } };
     }
-    // Idempotency pre-check (the DB partial-unique is the backstop).
-    const existingId = await this.findDuplicate(actor, m.type, m.client_id);
-    if (existingId) return { ...base, status: 'duplicate', data: { id: existingId } };
-
     try {
+      // Idempotency pre-check (the DB partial-unique is the backstop). Inside
+      // the try so a dedup read error isolates to THIS item, never aborts the
+      // batch (clinical hard rule 8 — item-level isolation).
+      const existingId = await this.findDuplicate(actor, m.type, m.client_id);
+      if (existingId) return { ...base, status: 'duplicate', data: { id: existingId } };
       const data = await this.dispatch(actor, m);
       return { ...base, status: 'applied', data };
     } catch (e) {
@@ -107,23 +109,26 @@ export class SyncService {
     const p = m.payload;
     switch (m.type) {
       case 'vital.create': {
-        const dto = { ...p, client_id: m.client_id } as unknown as CreateVitalDto;
+        // Validate the offline payload against the same DTO the HTTP pipe uses
+        // (the outer SyncMutationDto only checks @IsObject) → bad shape becomes
+        // a clean per-item VALIDATION, not an opaque INTERNAL.
+        const dto = toValidatedInstance(CreateVitalDto, { ...p, client_id: m.client_id });
         return this.vitals.create(actor, this.requireId(p.resident_id), dto);
       }
       case 'administration.confirm': {
-        const dto = {
+        const dto = toValidatedInstance(ConfirmAdministrationDto, {
           notes: p.notes,
           administered_at: p.administered_at,
           client_id: m.client_id,
-        } as unknown as ConfirmAdministrationDto;
+        });
         return this.emar.confirm(actor, this.requireId(p.administration_id), dto);
       }
       case 'administration.refuse': {
-        const dto = {
+        const dto = toValidatedInstance(RefuseAdministrationDto, {
           reason: p.reason,
           notes: p.notes,
           client_id: m.client_id,
-        } as unknown as RefuseAdministrationDto;
+        });
         return this.emar.refuse(actor, this.requireId(p.administration_id), dto);
       }
     }

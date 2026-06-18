@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { timingSafeEqualHex } from '../../common/crypto/safe-equal';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface RefreshResult {
@@ -51,7 +52,7 @@ export class TokenService {
     if (!id || !secret) throw new UnauthorizedException('Malformed refresh token');
 
     const row = await this.prisma.refreshToken.findUnique({ where: { id } }).catch(() => null);
-    if (!row || row.tokenHash !== this.hash(secret)) {
+    if (!row || !timingSafeEqualHex(row.tokenHash, this.hash(secret))) {
       throw new UnauthorizedException('Invalid refresh token');
     }
     if (row.revokedAt || row.rotatedAt) {

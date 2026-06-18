@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
 import { AuditService } from '../../common/audit/audit.service';
 import { JwtPayload } from '../../common/auth/jwt-payload';
+import { timingSafeEqualHex } from '../../common/crypto/safe-equal';
 import { PrismaService } from '../../prisma/prisma.service';
 import { forTenant } from '../../prisma/tenant';
 import { AcceptInviteDto, InviteDto, LoginDto, PinLoginDto } from './dto/auth.dto';
@@ -244,7 +245,9 @@ export class AuthService {
       ? await this.prisma.inviteToken.findUnique({ where: { id } }).catch(() => null)
       : null;
     const hashOk =
-      row && secret && row.tokenHash === createHash('sha256').update(secret).digest('hex');
+      row &&
+      secret &&
+      timingSafeEqualHex(row.tokenHash, createHash('sha256').update(secret).digest('hex'));
 
     if (!row || !hashOk || row.usedAt) {
       throw new UnauthorizedException('Convite inválido');

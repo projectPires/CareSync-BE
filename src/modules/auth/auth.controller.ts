@@ -1,16 +1,9 @@
-import {
-  Body,
-  Controller,
-  ForbiddenException,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Put,
-} from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtPayload } from '../../common/auth/jwt-payload';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { Require } from '../../common/decorators/require.decorator';
 import { AuthService } from './auth.service';
 import {
   AcceptInviteDto,
@@ -79,18 +72,19 @@ export class AuthController {
   }
 
   @Post('invite')
+  @Require('user.invite')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Convidar worker (admin) — email com link 24 h' })
   @ApiResponse({ status: 201, description: 'Em dev devolve accept_url (sem mailer ainda)' })
-  @ApiResponse({ status: 403, description: 'Só admins convidam' })
+  @ApiResponse({ status: 403, description: 'Sem permissão user.invite (matriz §8 — só admin)' })
   @ApiResponse({ status: 409, description: 'Email já existe neste Lar' })
   @ApiResponse({ status: 422, description: 'Cédula em falta para nurse/doctor' })
   invite(
     @CurrentUser() user: JwtPayload,
     @Body() dto: InviteDto,
   ): Promise<{ accept_url?: string }> {
-    // Authorization matrix chega com o PermissionsGuard (#4); até lá, regra mínima:
-    if (user.role !== 'admin') throw new ForbiddenException('Só admins podem convidar');
+    // Autorização é da exclusiva responsabilidade do PermissionsGuard (@Require
+    // acima) — regra dura 5: nada de role-checks ad-hoc no controller/serviço.
     return this.auth.invite(user, dto);
   }
 

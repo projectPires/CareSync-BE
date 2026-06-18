@@ -6,6 +6,7 @@ import { AuditModule } from './common/audit/audit.module';
 import { auditContextMiddleware } from './common/audit/audit-context';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
+import { RateLimitGuard } from './common/guards/rate-limit.guard';
 import { validateEnv } from './config/env';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -44,8 +45,11 @@ import { RedisModule } from './redis/redis.module';
     JobsModule,
   ],
   providers: [
-    // Ordem importa: autenticação primeiro, autorização (matriz §8) depois.
+    // Ordem importa: autenticação primeiro, depois rate-limit (já com req.user
+    // para distinguir limite por-utilizador vs por-IP), e por fim autorização
+    // (matriz §8). NFR §7.
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RateLimitGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
   ],
 })

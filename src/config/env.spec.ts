@@ -28,6 +28,14 @@ describe('validateEnv', () => {
     );
   });
 
+  it('rejects a JWT_SECRET shorter than 32 chars (HS256 needs a >= 256-bit key)', () => {
+    expect(() => validateEnv({ JWT_SECRET: 'x'.repeat(31) })).toThrow(/JWT_SECRET/);
+  });
+
+  it('accepts a JWT_SECRET of 32 chars or more', () => {
+    expect(validateEnv({ JWT_SECRET: 'x'.repeat(32) }).JWT_SECRET).toHaveLength(32);
+  });
+
   it('accepts production when every sensitive value is explicit', () => {
     const env = validateEnv({
       NODE_ENV: 'production',
