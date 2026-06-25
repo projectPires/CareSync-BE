@@ -502,10 +502,37 @@ model WoundRecord {
   createdBy  String      @map("created_by") @db.Uuid
   createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz()
 
-  resident Resident @relation(fields: [residentId], references: [id])
+  resident   Resident         @relation(fields: [residentId], references: [id])
+  evolutions WoundEvolution[]
 
   @@index([larId, residentId])
   @@map("wound_record")
+}
+
+/// Append-only timeline of UPP evolutions for a wound (§6 M7, #38). WoundRecord
+/// stays the wound identity with a MUTABLE status (open→healing→closed); the
+/// clinical readings here are the append-only entity (clinical hard rule 1 —
+/// "wound evolutions"). Rectification = new row + supersedes_id + reason.
+model WoundEvolution {
+  id           String   @id @default(uuid()) @db.Uuid
+  larId        String   @map("lar_id") @db.Uuid
+  woundId      String   @map("wound_id") @db.Uuid
+  grade        Int // grau UPP 0–4
+  size         String? // ex: "3x2 cm"
+  dressing     String? // hidrocoloide/alginato/hidrogel/filme/espuma (validado no #11)
+  trend        String? // melhorando/estavel/piorando/novo (derivável; opcional)
+  photoKey     String?  @map("photo_key") // chave S3 tenant-scoped (#13)
+  notes        String?
+  recordedBy   String   @map("recorded_by") @db.Uuid
+  supersedesId String?  @map("supersedes_id") @db.Uuid
+  reason       String?
+  clientId     String?  @map("client_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  wound WoundRecord @relation(fields: [woundId], references: [id])
+
+  @@index([larId, woundId, createdAt])
+  @@map("wound_evolution")
 }
 
 model EliminationRecord {
