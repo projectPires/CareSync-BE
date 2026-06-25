@@ -12,6 +12,7 @@ import { JwtPayload } from '../../../common/auth/jwt-payload';
 import { can } from '../../../common/auth/permissions';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { forTenant, tenantBatch } from '../../../prisma/tenant';
+import { ResidentScopeService } from '../resident-scope.service';
 import { CreateVitalDto } from './dto/vital.dto';
 import { isAbnormal, validateVitalValue } from './vital-metrics';
 import { VITALS_EVENTS } from './vitals.events';
@@ -35,40 +36,14 @@ export class VitalsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly events: EventEmitter2,
+    // Floor scoping (clinical hard rule 7) is shared across clinical modules.
+    private readonly scope: ResidentScopeService,
   ) {}
-
-  // ── Floor scoping (clinical hard rule 7 — server-side) ─────────────────────
-
-  private async actorFloors(actor: JwtPayload): Promise<number[]> {
-    const me = await forTenant(this.prisma, actor.lar_id).user.findUnique({
-      where: { id: actor.sub },
-      select: { floors: true },
-    });
-    return me?.floors ?? [];
-  }
-
-  /** 404 (não 403) fora do piso — não revelar existência (regra clínica 7). */
-  private async assertResidentInScope(actor: JwtPayload, residentId: string): Promise<void> {
-    if (can(actor, 'resident.read_all_floors')) {
-      const exists = await forTenant(this.prisma, actor.lar_id).resident.findUnique({
-        where: { id: residentId },
-        select: { id: true },
-      });
-      if (!exists) throw new NotFoundException('Residente não encontrado');
-      return;
-    }
-    const floors = await this.actorFloors(actor);
-    const scoped = await forTenant(this.prisma, actor.lar_id).resident.findFirst({
-      where: { id: residentId, floor: { in: floors } },
-      select: { id: true },
-    });
-    if (!scoped) throw new NotFoundException('Residente não encontrado');
-  }
 
   // ── Record (append-only) ───────────────────────────────────────────────────
 
   async create(actor: JwtPayload, residentId: string, dto: CreateVitalDto) {
-    await this.assertResidentInScope(actor, residentId);
+    await this.scope.assertResidentInScope(actor, residentId);
 
     // Shape per metric (422 on bad shape) BEFORE any side effect.
     const parsed = validateVitalValue(dto.metric, dto.value);
@@ -150,7 +125,7 @@ export class VitalsService {
   // ── History ─────────────────────────────────────────────────────────────────
 
   async history(actor: JwtPayload, residentId: string, q: HistoryQuery) {
-    await this.assertResidentInScope(actor, residentId);
+    await this.scope.assertResidentInScope(actor, residentId);
     if (q.metric && !METRICS.includes(q.metric as VitalMetric)) {
       throw new BadRequestException('métrica inválida');
     }

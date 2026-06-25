@@ -46,6 +46,15 @@ export const PERMISSIONS = {
   'vitals.record_advanced': ['admin', 'nurse', 'doctor'], // 🔒 SpO₂/Glicemia/Dor — delegável a aide
   'vitals.read': ['admin', 'nurse', 'aide', 'doctor'], // aide: 24h (cap em vitals.read_history)
   'vitals.read_history': ['admin', 'nurse', 'doctor'], // histórico além de 24h
+
+  // LogEntry — registos genéricos (#10). Matriz §8 "Higiene/Nutrição" + "Animação":
+  // médico é READ-ONLY em cuidados (nutrition/hygiene/social); escreve em medical.
+  'log.read': ['admin', 'nurse', 'aide', 'doctor'], // scoped aos pisos
+  // Gate base do POST (qualquer role clínico escreve ALGUMA categoria); a
+  // autoridade fina por categoria é refinada no serviço (padrão dos vitals).
+  'log.write': ['admin', 'nurse', 'aide', 'doctor'],
+  'log.write_medical': ['admin', 'nurse', 'doctor'], // diário clínico — aide ⛔ (dados clínicos)
+  'log.write_care': ['admin', 'nurse', 'aide'], // nutrition/hygiene/social — médico 🔍
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;

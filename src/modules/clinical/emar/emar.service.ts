@@ -11,6 +11,7 @@ import { JwtPayload } from '../../../common/auth/jwt-payload';
 import { can } from '../../../common/auth/permissions';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { forTenant, tenantBatch } from '../../../prisma/tenant';
+import { ResidentScopeService } from '../resident-scope.service';
 import { assertValidTransition } from './administration-state-machine';
 import { ConfirmAdministrationDto, RefuseAdministrationDto } from './dto/administration.dto';
 import {
@@ -38,40 +39,14 @@ export class EmarService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly events: EventEmitter2,
+    // Floor scoping (clinical hard rule 7) is shared across clinical modules.
+    private readonly scope: ResidentScopeService,
   ) {}
-
-  // ── Floor scoping (clinical hard rule 7 — server-side) ─────────────────────
-
-  private async actorFloors(actor: JwtPayload): Promise<number[]> {
-    const me = await forTenant(this.prisma, actor.lar_id).user.findUnique({
-      where: { id: actor.sub },
-      select: { floors: true },
-    });
-    return me?.floors ?? [];
-  }
-
-  /** 404 (não 403) fora do piso — não revelar existência (regra clínica 7). */
-  private async assertResidentInScope(actor: JwtPayload, residentId: string): Promise<void> {
-    if (can(actor, 'resident.read_all_floors')) {
-      const exists = await forTenant(this.prisma, actor.lar_id).resident.findUnique({
-        where: { id: residentId },
-        select: { id: true },
-      });
-      if (!exists) throw new NotFoundException('Residente não encontrado');
-      return;
-    }
-    const floors = await this.actorFloors(actor);
-    const scoped = await forTenant(this.prisma, actor.lar_id).resident.findFirst({
-      where: { id: residentId, floor: { in: floors } },
-      select: { id: true },
-    });
-    if (!scoped) throw new NotFoundException('Residente não encontrado');
-  }
 
   // ── Plan (Medication) — mutable, admin/doctor only (matrix) ────────────────
 
   async createPlan(actor: JwtPayload, residentId: string, dto: CreateMedicationDto) {
-    await this.assertResidentInScope(actor, residentId);
+    await this.scope.assertResidentInScope(actor, residentId);
     const data: Prisma.MedicationUncheckedCreateInput = {
       larId: actor.lar_id,
       residentId,
@@ -101,7 +76,7 @@ export class EmarService {
   }
 
   async listPlans(actor: JwtPayload, residentId: string, updatedSince?: Date) {
-    await this.assertResidentInScope(actor, residentId);
+    await this.scope.assertResidentInScope(actor, residentId);
     const rows = await forTenant(this.prisma, actor.lar_id).medication.findMany({
       where: {
         residentId,
@@ -121,7 +96,7 @@ export class EmarService {
     if (!plan || (residentId && plan.residentId !== residentId)) {
       throw new NotFoundException('Plano de medicação não encontrado');
     }
-    await this.assertResidentInScope(actor, plan.residentId);
+    await this.scope.assertResidentInScope(actor, plan.residentId);
     return plan;
   }
 
@@ -195,7 +170,7 @@ export class EmarService {
       include: { resident: { select: { floor: true } } },
     });
     if (!target) throw new NotFoundException('Administração não encontrada');
-    await this.assertResidentInScope(actor, target.residentId);
+    await this.scope.assertResidentInScope(actor, target.residentId);
     const current = await db.medicationAdministration.findFirst({
       where: { medicationId: target.medicationId, scheduledAt: target.scheduledAt },
       orderBy: { createdAt: 'desc' },
@@ -320,7 +295,7 @@ export class EmarService {
 
   /** eMAR list — current state per slot in a window. Aide capped to today. */
   async listAdministrations(actor: JwtPayload, residentId: string, dateParam?: string) {
-    await this.assertResidentInScope(actor, residentId);
+    await this.scope.assertResidentInScope(actor, residentId);
     // Matrix: auxiliar vê só hoje — ignora pedido de outro dia sem emar.read_history.
     const requested = dateParam && can(actor, 'emar.read_history') ? dateParam : undefined;
     // "Hoje"/data = dia civil de Lisboa (não UTC) — apanha tomas perto da meia-noite local.
