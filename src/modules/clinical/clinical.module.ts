@@ -7,6 +7,8 @@ import { LogsService } from './logs/logs.service';
 import { ResidentScopeService } from './resident-scope.service';
 import { VitalsController } from './vitals/vitals.controller';
 import { VitalsService } from './vitals/vitals.service';
+import { WoundsController } from './wounds/wounds.controller';
+import { WoundsService } from './wounds/wounds.service';
 
 /**
  * Clinical module — eMAR (#6), vitals (#8), log entries (#10), wounds,
@@ -16,8 +18,14 @@ import { VitalsService } from './vitals/vitals.service';
  * server-side floor-scoping (clinical hard rule 7) every sub-service injects.
  */
 @Module({
-  controllers: [MedicationsController, AdministrationsController, VitalsController, LogsController],
-  providers: [ResidentScopeService, EmarService, VitalsService, LogsService],
+  controllers: [
+    MedicationsController,
+    AdministrationsController,
+    VitalsController,
+    LogsController,
+    WoundsController,
+  ],
+  providers: [ResidentScopeService, EmarService, VitalsService, LogsService, WoundsService],
   exports: [EmarService, VitalsService, LogsService],
 })
 export class ClinicalModule {}
