@@ -68,6 +68,13 @@ describe('Matriz de permissões (§8)', () => {
     ['log.write_medical', 'aide', false],
     ['log.write_care', 'aide', true],
     ['log.write_care', 'doctor', false],
+    // Pele & Feridas (#11) — aide só com delegação (grau 1–2); grau ≥3 nunca aide
+    ['wound.read', 'aide', true],
+    ['wound.record', 'nurse', true],
+    ['wound.record', 'doctor', true],
+    ['wound.record', 'aide', false],
+    ['wound.stage_severe', 'doctor', true],
+    ['wound.stage_severe', 'aide', false],
   ];
 
   it.each(rows)('%s × %s → %s', (permission, role, expected) => {
@@ -78,6 +85,9 @@ describe('Matriz de permissões (§8)', () => {
     expect(can(user('aide'), 'emar.administer')).toBe(false);
     expect(can(user('aide', ['emar.administer']), 'emar.administer')).toBe(true);
     expect(can(user('nurse', ['resident.photo']), 'resident.photo')).toBe(true);
+    // aide delegado regista feridas, mas grau severo (stage_severe) continua vedado
+    expect(can(user('aide', ['wound.record']), 'wound.record')).toBe(true);
+    expect(can(user('aide', ['wound.record']), 'wound.stage_severe')).toBe(false);
   });
 
   it('deny by default — permissão desconhecida nunca passa', () => {

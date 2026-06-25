@@ -55,6 +55,11 @@ export const PERMISSIONS = {
   'log.write': ['admin', 'nurse', 'aide', 'doctor'],
   'log.write_medical': ['admin', 'nurse', 'doctor'], // diário clínico — aide ⛔ (dados clínicos)
   'log.write_care': ['admin', 'nurse', 'aide'], // nutrition/hygiene/social — médico 🔍
+
+  // Pele & Feridas (#11). Matriz §8 "Pele & Feridas":
+  'wound.read': ['admin', 'nurse', 'aide', 'doctor'], // scoped aos pisos
+  'wound.record': ['admin', 'nurse', 'doctor'], // 🔒 delegável a aide qualificado (grau 1–2)
+  'wound.stage_severe': ['admin', 'nurse', 'doctor'], // grau ≥3 / estadiamento — NÃO delegável (aide ⛔)
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -63,6 +68,7 @@ export type Permission = keyof typeof PERMISSIONS;
 export const DELEGATABLE: readonly Permission[] = [
   'resident.photo',
   'emar.administer',
+  'wound.record', // aide qualificado pode registar feridas (grau 1–2; grau ≥3 exige wound.stage_severe)
   'vitals.record_advanced',
 ] as const;
 
