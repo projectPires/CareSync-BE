@@ -58,6 +58,16 @@ describe('Matriz de permissões (§8)', () => {
     ['emar.administer', 'nurse', true],
     ['emar.administer', 'aide', false],
     ['emar.refuse', 'aide', true],
+    // LogEntry (#10) — médico read-only em cuidados, escreve em medical
+    ['log.read', 'aide', true],
+    ['log.read', 'doctor', true],
+    ['log.write', 'doctor', true],
+    ['log.write', 'aide', true],
+    ['log.write_medical', 'nurse', true],
+    ['log.write_medical', 'doctor', true],
+    ['log.write_medical', 'aide', false],
+    ['log.write_care', 'aide', true],
+    ['log.write_care', 'doctor', false],
   ];
 
   it.each(rows)('%s × %s → %s', (permission, role, expected) => {
